@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('classifications', function (Blueprint $table) {
             $table->id();
             $table->string('name', 100)->unique();
-            $table->string('slug', 120)->unique();
+            $table->string('slug', 120)->index();
             $table->text('description')->nullable();
             $table->string('color_badge', 7)->default('#6c757d');
             $table->boolean('is_active')->default(true)->index();
