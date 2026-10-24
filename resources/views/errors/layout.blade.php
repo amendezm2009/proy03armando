@@ -5,6 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('code') - @yield('title')</title>
+    @yield('head')
     @vite(['resources/css/app.css'])
 </head>
 

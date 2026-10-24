@@ -45,7 +45,7 @@ flowchart TD
 ---
 
 ### Fase 0: Configuración de Base de Datos MySQL
-- [ ] Configurar variables en `.env`:
+- [x] Configurar variables en `.env`:
   ```dotenv
   DB_CONNECTION=mysql
   DB_HOST=127.0.0.1
@@ -81,28 +81,26 @@ flowchart TD
 - [x] **Migración y Modelo:**
   - Tabla `classifications` (`id`, `name` único, `slug` indexado, `description`, `color_badge`, `is_active`, `created_at`, `updated_at`).
   - Modelo `App\Models\Classification` con casts, fillables y factory (`ClassificationFactory`).
-- [X] **Seeder:**
-  - [x] `ClassificationSeeder` con 2 registros manuales y 5 tomados de un catálogo con Faker (usa `SaveClassification`).
-  - [x] Registro en `DatabaseSeeder` con `$this->call(ClassificationSeeder::class);`.
+- [x] **Seeder:**
+  - `ClassificationSeeder` con 2 registros manuales y 5 tomados de un catálogo con Faker (usa `SaveClassification`), registrado en `DatabaseSeeder`.
 - [x] **Validación:**
   - Form Request único `App\Http\Requests\ClassificationRequest` (web, API e importación Excel mediante `baseRules()`; soporta `PUT` y `PATCH` parcial).
 - [x] **Acción compartida:**
-  - `App\Actions\SaveClassification` (genera el `slug` y guarda); la usan el controlador web y la importación, y la usará la API.
+  - `App\Actions\SaveClassification` (genera el `slug` y guarda); la usan el controlador web, el controlador API y la importación.
 - [x] **Exportación a Excel (Instalación):**
   - Instalar `maatwebsite/excel`.
 - [x] **Exportación a Excel (Implementación):**
   - `App\Exports\ClassificationsExport` con encabezados, formato de fechas y estilos de celdas.
   - Endpoint de descarga web: `GET /classifications/export/excel`.
 - [x] **Importación desde Excel:**
-  - `App\Imports\ClassificationsImport` (`ToModel`, `WithHeadingRow`, `WithValidation`) que reutiliza `ClassificationRequest::baseRules()`, usa `SaveClassification` y rechaza nombres duplicados (en BD y dentro del archivo).
+  - `App\Imports\ClassificationsImport` (`ToModel`, `WithHeadingRow`, `WithValidation`) que reutiliza `ClassificationRequest::baseRules()`, guarda con `SaveClassification`, acepta `is_active` vacío y rechaza nombres duplicados (en BD y dentro del archivo).
   - Endpoint web: `POST /classifications/import` (`.xlsx`/`.csv`, máx. 2 MB), con reporte de errores por fila.
-- [ ] **Controlador Dual:**
-  - [x] Web Controller (`ClassificationController`) con vistas Blade (`resources/views/classifications/`) y DataTables (búsqueda, paginación, orden).
-  - [ ] API Controller (`Api\ClassificationController`) con `ClassificationResource` (endpoints RESTful JSON); requiere `php artisan install:api`.
-- [ ] **Pruebas Automatizadas (Pest):**
-  - Pruebas de integración para CRUD web, exportación/importación y respuestas API JSON (200, 201, 422).
-- [ ] **Cierre del módulo:** manejo centralizado de errores en `bootstrap/app.php` (`QueryException`) y páginas de error personalizadas (`404`, `500`).
-
+- [x] **Controlador Dual:**
+  - Web Controller (`ClassificationController`) con vistas Blade (`resources/views/classifications/`) y DataTables (búsqueda, paginación, orden).
+  - API Controller (`Api\ClassificationController`) con `ClassificationResource` y rutas `apiResource` (`/api/classifications`, nombres `api.classifications.*`). Aún sin autenticación: se protege en la Fase 3.
+- [x] **Pruebas Automatizadas (Pest):**
+  - `tests/Feature/ClassificationControllerTest.php` (CRUD web, exportación e importación), `tests/Feature/Api/ClassificationControllerTest.php` (200, 201, 204, 404, 422, `PUT` y `PATCH`) y `tests/Feature/ErrorHandlingTest.php`.
+- [x] **Cierre del módulo:** manejo centralizado de errores en `bootstrap/app.php` (`QueryException`: 409 por duplicado, 503 por falla de base de datos) y páginas de error personalizadas autónomas (`403`, `404`, `419`, `500`, `503`) en `resources/views/errors/`; la `503` se recarga sola cada 30 segundos (`<meta http-equiv="refresh">`) para recuperarse cuando la base de datos vuelve.
 ---
 
 ### Fase 3: Seguridad, Autenticación y Control de Accesos (RBAC)
@@ -122,6 +120,7 @@ flowchart TD
   - `/cliente/dashboard`: Catálogo de productos, carrito/pedidos y perfil.
   - `/invitado/catalogo`: Vista pública de productos sin permisos de edición.
 - [ ] **Seguridad de APIs con Laravel Sanctum:**
+  - Sanctum ya está instalado (`php artisan install:api`: `routes/api.php` y migración `personal_access_tokens`).
   - Endpoints de autenticación `/api/login` y `/api/logout`.
   - Proteger los endpoints de clasificaciones y productos con middleware `auth:sanctum` y políticas `can:...`.
 
