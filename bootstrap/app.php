@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -16,7 +17,29 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
-        );
+        $wantsJson = fn (Request $request): bool => $request->is('api/*') || $request->expectsJson();
+
+        $exceptions->shouldRenderJsonWhen($wantsJson);
+
+        $exceptions->render(function (QueryException $e, Request $request) use ($wantsJson) {
+            $isDuplicate = ($e->errorInfo[1] ?? null) === 1062;
+
+            if (! $isDuplicate && config('app.debug')) {
+                return null; // en desarrollo se conserva la pantalla de depuración
+            }
+
+            $message = $isDuplicate
+                ? 'Ya existe un registro con esos datos.'
+                : 'No se pudo completar la operación por un problema con la base de datos. Intenta nuevamente.';
+
+            if ($wantsJson($request)) {
+                return response()->json(['message' => $message], $isDuplicate ? 409 : 503);
+            }
+
+            if ($isDuplicate && ! $request->isMethodSafe()) {
+                return back()->withInput()->with('error', $message);
+            }
+
+            return response()->view('errors.503', [], 503);
+        });
     })->create();
