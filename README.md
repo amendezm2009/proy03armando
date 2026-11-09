@@ -27,7 +27,9 @@ Proyecto desarrollado con **Laravel 13**, **MySQL**, **Bootstrap 5**, **jQuery**
    - Un producto puede poseer múltiples **etiquetas de clasificación**.
    - Una etiqueta de clasificación puede estar presente en múltiples **productos**.
    - Tabla pivote intermedia: `classification_product` con claves foráneas, índices y timestamps.
-
+3. **Formularios (UX y validación):**
+   - Las etiquetas de los campos obligatorios llevan un asterisco rojo (`<span class="text-danger">*</span>`), con una leyenda "* Campo obligatorio" al inicio del formulario.
+   - Validación en el cliente con atributos HTML5 y estilos de Bootstrap (`needs-validation`, `novalidate`, `was-validated`); el servidor siempre revalida con Form Requests y muestra los errores en rojo (`is-invalid`) con los datos previos (`old()`).
 ---
 
 ## 🗺️ Plan de Acción Paso a Paso
@@ -74,7 +76,9 @@ flowchart TD
 - [x] Configurar `vite.config.js` y compilar assets iniciales con `npm run build`.
 - [x] Diseñar el layout maestro Blade (`resources/views/layouts/app.blade.php`) con navbar responsiva, contenedor de alertas y secciones `@yield('content')` y `@push('scripts')`.
 - [x] Actualizar página de bienvenida (`welcome.blade.php`) con Bootstrap 5.
-
+- [ ] Script global de validación del cliente en el layout maestro (formularios con clase `needs-validation`).
+- [ ] Componente Blade reutilizable para etiquetas con asterisco de campo obligatorio (por ejemplo, `<x-form.label for="name" required>Nombre</x-form.label>`).
+- [ ] Aplicar el asterisco y la validación del cliente a los formularios existentes: clasificaciones, login y registro.
 ---
 
 ### Fase 2: CRUD de Clasificaciones / Etiquetas (Web, API y Exportación a Excel)

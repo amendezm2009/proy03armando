@@ -16,7 +16,7 @@ class ClassificationController extends Controller
     public function index(): AnonymousResourceCollection
     {
         return ClassificationResource::collection(
-            Classification::orderBy('name')->paginate(15)
+            Classification::orderBy('name')->paginate(2)
         );
     }
 

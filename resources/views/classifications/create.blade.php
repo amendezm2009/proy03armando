@@ -8,7 +8,7 @@
             <div class="card">
                 <div class="card-header">Nueva clasificación</div>
                 <div class="card-body">
-                    <form method="POST" action="{{ route('classifications.store') }}">
+                    <form method="POST" action="{{ route('classifications.store') }}" class="needs-validation" novalidate>
                         @include('classifications._form')
                     </form>
                 </div>

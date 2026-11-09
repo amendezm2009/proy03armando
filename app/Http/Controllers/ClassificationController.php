@@ -19,7 +19,7 @@ class ClassificationController extends Controller
     public function index(): View
     {
         return view('classifications.index', [
-            'classifications' => Classification::orderBy('name')->get(),
+            'classifications' => Classification::orderBy('name')->paginate(5),
         ]);
     }
 
@@ -30,6 +30,8 @@ class ClassificationController extends Controller
 
     public function store(ClassificationRequest $request, SaveClassification $save): RedirectResponse
     {
+        //dd("Probando");
+        //dd($request->validated());
         $save->handle($request->validated());
 
         return to_route('classifications.index')->with('success', 'Clasificación creada.');

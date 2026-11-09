@@ -8,7 +8,7 @@
             <div class="card">
                 <div class="card-header">Editar clasificación</div>
                 <div class="card-body">
-                    <form method="POST" action="{{ route('classifications.update', $classification) }}">
+                    <form method="POST" action="{{ route('classifications.update', $classification) }}" class="needs-validation" novalidate>
                         @method('PUT')
                         @include('classifications._form')
                     </form>

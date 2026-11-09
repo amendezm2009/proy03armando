@@ -21,3 +21,16 @@ if (pdfMake && pdfFonts) {
     pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts;
     window.pdfMake = pdfMake;
 }
+
+// Validación del cliente (Bootstrap): formularios con clase "needs-validation"
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('form.needs-validation').forEach((form) => {
+        form.addEventListener('submit', (event) => {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        });
+    });
+});

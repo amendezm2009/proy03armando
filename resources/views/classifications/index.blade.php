@@ -33,7 +33,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($classifications as $classification)
+                    @foreach ($classifications as $classification)
                         <tr>
                             <td>
                                 <span class="badge badge-tag text-white"
@@ -44,7 +44,7 @@
                             <td class="text-muted">{{ $classification->slug }}</td>
                             <td>{{ Str::limit($classification->description, 60) }}</td>
                             <td>
-                                @if($classification->is_active)
+                                @if ($classification->is_active)
                                     <span class="badge bg-success-subtle text-success border">Activa</span>
                                 @else
                                     <span class="badge bg-secondary-subtle text-secondary border">Inactiva</span>
@@ -78,7 +78,7 @@
     <div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <form method="POST" action="{{ route('classifications.import') }}" enctype="multipart/form-data"
-                class="modal-content">
+                class="modal-content needs-validation" novalidate>
                 @csrf
                 <div class="modal-header">
                     <h5 class="modal-title" id="importModalLabel">Importar desde Excel</h5>
@@ -90,7 +90,16 @@
                         <code>name</code>, <code>description</code>, <code>color_badge</code> (ej. #0d6efd) e
                         <code>is_active</code> (1 o 0). Los nombres existentes se rechazan.
                     </p>
-                    <input type="file" name="file" class="form-control" accept=".xlsx,.csv" required>
+                    <x-form.label for="file" required>Archivo</x-form.label>
+                    <input type="file" id="file" name="file" accept=".xlsx,.csv" required
+                        class="form-control @error('file') is-invalid @enderror">
+                    <div class="invalid-feedback">
+                        @error('file')
+                            {{ $message }}
+                        @else
+                            Selecciona un archivo .xlsx o .csv.
+                        @enderror
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -103,23 +112,37 @@
 
 @push('scripts')
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
             new DataTable('#classifications-table', {
                 pageLength: 10,
-                order: [[4, 'desc']],
-                columnDefs: [{ orderable: false, targets: 5 }],
+                order: [
+                    [4, 'desc']
+                ],
+                columnDefs: [{
+                    orderable: false,
+                    targets: 5
+                }],
                 language: {
                     search: 'Buscar:',
                     lengthMenu: 'Mostrar _MENU_ registros',
                     info: 'Mostrando _START_ a _END_ de _TOTAL_',
                     infoEmpty: 'Sin registros',
                     zeroRecords: 'No se encontraron resultados',
-                    paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' },
+                    paginate: {
+                        first: 'Primero',
+                        last: 'Último',
+                        next: 'Siguiente',
+                        previous: 'Anterior'
+                    },
                 },
             });
+            
+            @if ($errors->has('file'))
+                bootstrap.Modal.getOrCreateInstance('#importModal').show();
+            @endif
 
-            document.querySelectorAll('.js-delete-form').forEach(function (form) {
-                form.addEventListener('submit', function (event) {
+            document.querySelectorAll('.js-delete-form').forEach(function(form) {
+                form.addEventListener('submit', function(event) {
                     if (!confirm('¿Eliminar esta clasificación?')) {
                         event.preventDefault();
                     }
