@@ -100,11 +100,14 @@ flowchart TD
   - `App\Imports\ClassificationsImport` (`ToModel`, `WithHeadingRow`, `WithValidation`) que reutiliza `ClassificationRequest::baseRules()`, guarda con `SaveClassification`, acepta `is_active` vacío y rechaza nombres duplicados (en BD y dentro del archivo).
   - Endpoint web: `POST /classifications/import` (`.xlsx`/`.csv`, máx. 2 MB), con reporte de errores por fila.
 - [x] **Controlador Dual:**
-  - Web Controller (`ClassificationController`) con vistas Blade (`resources/views/classifications/`) y DataTables (búsqueda, paginación, orden).
   - API Controller (`Api\ClassificationController`) con `ClassificationResource` y rutas `apiResource` (`/api/classifications`, nombres `api.classifications.*`). Aún sin autenticación: se protege en la Fase 3.
 - [x] **Pruebas Automatizadas (Pest):**
   - `tests/Feature/ClassificationControllerTest.php` (CRUD web, exportación e importación), `tests/Feature/Api/ClassificationControllerTest.php` (200, 201, 204, 404, 422, `PUT` y `PATCH`) y `tests/Feature/ErrorHandlingTest.php`.
 - [x] **Cierre del módulo:** manejo centralizado de errores en `bootstrap/app.php` (`QueryException`: 409 por duplicado, 503 por falla de base de datos) y páginas de error personalizadas autónomas (`403`, `404`, `419`, `500`, `503`) en `resources/views/errors/`; la `503` se recarga sola cada 30 segundos (`<meta http-equiv="refresh">`) para recuperarse cuando la base de datos vuelve.
+- [x] **Listado con filtros y paginación:**
+  - Web y API comparten `ClassificationIndexRequest` (validación de `search`, `is_active` y `per_page`) y el scope `Classification::filter()`.
+  - Web: formulario GET con búsqueda por nombre o slug, estado (activas/inactivas) y registros por página (5, 10, 25, 50), con paginación de Laravel (Bootstrap 5) que conserva los filtros.
+  - API: parámetros `?search=`, `?is_active=` y `?per_page=` (máx. 100, por defecto 15).
 ---
 
 ### Fase 3: Seguridad, Autenticación y Control de Accesos (RBAC)

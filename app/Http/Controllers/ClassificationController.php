@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\SaveClassification;
 use App\Exports\ClassificationsExport;
+use App\Http\Requests\ClassificationIndexRequest;
 use App\Http\Requests\ClassificationRequest;
 use App\Imports\ClassificationsImport;
 use App\Models\Classification;
@@ -16,10 +17,16 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ClassificationController extends Controller
 {
-    public function index(): View
+    public function index(ClassificationIndexRequest $request): View
     {
+        $filters = $request->validated();
+
         return view('classifications.index', [
-            'classifications' => Classification::orderBy('name')->paginate(5),
+            'classifications' => Classification::filter($filters)
+                ->orderBy('name')
+                ->paginate($filters['per_page'] ?? 10)
+                ->withQueryString(),
+            'filters' => $filters,
         ]);
     }
 
@@ -30,8 +37,6 @@ class ClassificationController extends Controller
 
     public function store(ClassificationRequest $request, SaveClassification $save): RedirectResponse
     {
-        //dd("Probando");
-        //dd($request->validated());
         $save->handle($request->validated());
 
         return to_route('classifications.index')->with('success', 'Clasificación creada.');

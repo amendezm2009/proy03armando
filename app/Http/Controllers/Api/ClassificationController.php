@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Actions\SaveClassification;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ClassificationIndexRequest;
 use App\Http\Requests\ClassificationRequest;
 use App\Http\Resources\ClassificationResource;
 use App\Models\Classification;
@@ -13,10 +14,15 @@ use Illuminate\Http\Response;
 
 class ClassificationController extends Controller
 {
-    public function index(): AnonymousResourceCollection
+    public function index(ClassificationIndexRequest $request): AnonymousResourceCollection
     {
+        $filters = $request->validated();
+
         return ClassificationResource::collection(
-            Classification::orderBy('name')->paginate(2)
+            Classification::filter($filters)
+                ->orderBy('name')
+                ->paginate($filters['per_page'] ?? 15)
+                ->withQueryString()
         );
     }
 
