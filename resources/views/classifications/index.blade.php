@@ -115,13 +115,11 @@
                 </table>
             </div>
 
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-                <small class="text-muted">
-                    Mostrando {{ $classifications->firstItem() ?? 0 }} a {{ $classifications->lastItem() ?? 0 }}
-                    de {{ $classifications->total() }}
-                </small>
-                {{ $classifications->links('pagination::bootstrap-5') }}
-            </div>
+            {{ $classifications->links('pagination::bootstrap-5') }}
+
+            @unless ($classifications->hasPages())
+                <small class="text-muted">Total: {{ $classifications->total() }}</small>
+            @endunless
         </div>
     </div>
 

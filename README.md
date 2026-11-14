@@ -11,7 +11,7 @@ Proyecto desarrollado con **Laravel 13**, **MySQL**, **Bootstrap 5**, **jQuery**
 - **Frontend / UI:** Bootstrap 5, jQuery, DataTables (con extensiones Responsive y Buttons)
 - **Compilador de Assets:** Vite
 - **Seguridad y Permisos:** Laravel Sanctum (APIs) + Spatie Laravel-Permission (Roles y Permisos RBAC)
-- **Autenticación UI:** Laravel UI / Blade Templates con Bootstrap 5
+- **Autenticación UI:** vistas Blade propias con Bootstrap 5
 - **Exportaciones y Reportes:** Laravel Excel (`maatwebsite/excel`) y DOMPDF (`barryvdh/laravel-dompdf`)
 - **Testing:** Pest PHP
 
@@ -64,6 +64,7 @@ flowchart TD
   ```
 - [x] Verificar soporte de `utf8mb4_unicode_ci` y motores InnoDB en `config/database.php`.
 - [x] Probar conexión y migración inicial del framework.
+- [x] Idiomas: mensajes del framework en español en `lang/es/` (`auth`, `pagination`, `passwords`, `validation`) y `lang/es.json`; el inglés viene incluido en Laravel y es el idioma de respaldo (`APP_FALLBACK_LOCALE=en`). Los textos de las vistas se escriben solo en español. Prueba: `tests/Feature/LocalizationTest.php`.
 
 ---
 
@@ -79,6 +80,7 @@ flowchart TD
 - [x] Script global de validación del cliente en `resources/js/app.js` (formularios con clase `needs-validation`).
 - [x] Componente Blade reutilizable para etiquetas con asterisco de campo obligatorio (`<x-form.label for="name" required>Nombre</x-form.label>`), con prueba en `tests/Feature/Views/FormLabelTest.php`.
 - [x] Aplicar el asterisco y la validación del cliente a los formularios existentes: clasificaciones, importación, login y registro.
+- [x] Componentes Blade reutilizables: `<x-form.input>` (etiqueta, campo, error y valor previo) y `<x-auth.card>` (tarjeta centrada de los formularios de acceso).
 
 ---
 
@@ -119,6 +121,7 @@ flowchart TD
   - Rutas web de clasificaciones protegidas con el middleware `auth`; navbar según la sesión (`@auth` / `@guest`).
   - Destino único tras iniciar sesión o registrarse: la ruta `home` (o la página que el usuario había solicitado); ningún archivo de autenticación nombra un módulo.
   - Las páginas protegidas se envían con `Cache-Control: no-store` para que no se vean con el botón "atrás" tras cerrar sesión.
+  - Reglas de nombre, correo y contraseña centralizadas en el trait `Http\Requests\Concerns\UserValidationRules`.
   - Pruebas: `tests/Feature/Auth/LoginTest.php` y `tests/Feature/Auth/RegisterTest.php`.
 - [ ] **Autenticación, parte B:**
   - Recuperación de contraseña (`/forgot-password` y `/reset-password/{token}`) con el broker de contraseñas de Laravel; la respuesta no revela si el correo está registrado. En local el correo se escribe en `storage/logs/laravel.log` (`MAIL_MAILER=log`).
