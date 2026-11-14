@@ -76,9 +76,10 @@ flowchart TD
 - [x] Configurar `vite.config.js` y compilar assets iniciales con `npm run build`.
 - [x] Diseñar el layout maestro Blade (`resources/views/layouts/app.blade.php`) con navbar responsiva, contenedor de alertas y secciones `@yield('content')` y `@push('scripts')`.
 - [x] Actualizar página de bienvenida (`welcome.blade.php`) con Bootstrap 5.
-- [ ] Script global de validación del cliente en el layout maestro (formularios con clase `needs-validation`).
-- [ ] Componente Blade reutilizable para etiquetas con asterisco de campo obligatorio (por ejemplo, `<x-form.label for="name" required>Nombre</x-form.label>`).
-- [ ] Aplicar el asterisco y la validación del cliente a los formularios existentes: clasificaciones, login y registro.
+- [x] Script global de validación del cliente en `resources/js/app.js` (formularios con clase `needs-validation`).
+- [x] Componente Blade reutilizable para etiquetas con asterisco de campo obligatorio (`<x-form.label for="name" required>Nombre</x-form.label>`), con prueba en `tests/Feature/Views/FormLabelTest.php`.
+- [x] Aplicar el asterisco y la validación del cliente a los formularios existentes: clasificaciones, importación, login y registro.
+
 ---
 
 ### Fase 2: CRUD de Clasificaciones / Etiquetas (Web, API y Exportación a Excel)
@@ -100,24 +101,29 @@ flowchart TD
   - `App\Imports\ClassificationsImport` (`ToModel`, `WithHeadingRow`, `WithValidation`) que reutiliza `ClassificationRequest::baseRules()`, guarda con `SaveClassification`, acepta `is_active` vacío y rechaza nombres duplicados (en BD y dentro del archivo).
   - Endpoint web: `POST /classifications/import` (`.xlsx`/`.csv`, máx. 2 MB), con reporte de errores por fila.
 - [x] **Controlador Dual:**
+  - Web Controller (`ClassificationController`) con vistas Blade (`resources/views/classifications/`); el listado usa filtros y paginación en servidor (sin DataTables). Requiere sesión iniciada desde la Fase 3.
   - API Controller (`Api\ClassificationController`) con `ClassificationResource` y rutas `apiResource` (`/api/classifications`, nombres `api.classifications.*`). Aún sin autenticación: se protege en la Fase 3.
 - [x] **Pruebas Automatizadas (Pest):**
-  - `tests/Feature/ClassificationControllerTest.php` (CRUD web, exportación e importación), `tests/Feature/Api/ClassificationControllerTest.php` (200, 201, 204, 404, 422, `PUT` y `PATCH`) y `tests/Feature/ErrorHandlingTest.php`.
+  - `tests/Feature/ClassificationControllerTest.php` (CRUD web, exportación e importación), `tests/Feature/Api/ClassificationControllerTest.php` (200, 201, 204, 404, 422, `PUT` y `PATCH`), `ClassificationFilterTest.php` en `tests/Feature/` y `tests/Feature/Api/` (filtros y paginación) y `tests/Feature/ErrorHandlingTest.php`.
 - [x] **Cierre del módulo:** manejo centralizado de errores en `bootstrap/app.php` (`QueryException`: 409 por duplicado, 503 por falla de base de datos) y páginas de error personalizadas autónomas (`403`, `404`, `419`, `500`, `503`) en `resources/views/errors/`; la `503` se recarga sola cada 30 segundos (`<meta http-equiv="refresh">`) para recuperarse cuando la base de datos vuelve.
 - [x] **Listado con filtros y paginación:**
   - Web y API comparten `ClassificationIndexRequest` (validación de `search`, `is_active` y `per_page`) y el scope `Classification::filter()`.
   - Web: formulario GET con búsqueda por nombre o slug, estado (activas/inactivas) y registros por página (5, 10, 25, 50), con paginación de Laravel (Bootstrap 5) que conserva los filtros.
   - API: parámetros `?search=`, `?is_active=` y `?per_page=` (máx. 100, por defecto 15).
+
 ---
 
 ### Fase 3: Seguridad, Autenticación y Control de Accesos (RBAC)
-- [ ] **Scaffolding de Autenticación:**
-  - Instalar `laravel/ui` (`php artisan ui bootstrap --auth`) o vistas Blade personalizadas en Bootstrap 5.
-  - UIs funcionales y responsivas para:
-    - Inicio de sesión (`login`)
-    - Registro de usuarios (`register`)
-    - Recuperación de contraseña (`forgot-password` / `reset-password`)
-    - Edición de perfil de usuario (`profile/edit`) y cambio de contraseña.
+- [x] **Autenticación, parte A (vistas Blade propias en Bootstrap 5, sin `laravel/ui`):**
+  - Inicio de sesión (`/login`) con "recordarme" y bloqueo tras 5 intentos fallidos (`Auth\LoginRequest`), registro (`/register`, `Auth\RegisterRequest`) y cierre de sesión (`POST /logout`).
+  - Rutas web de clasificaciones protegidas con el middleware `auth`; navbar según la sesión (`@auth` / `@guest`).
+  - Destino único tras iniciar sesión o registrarse: la ruta `home` (o la página que el usuario había solicitado); ningún archivo de autenticación nombra un módulo.
+  - Las páginas protegidas se envían con `Cache-Control: no-store` para que no se vean con el botón "atrás" tras cerrar sesión.
+  - Pruebas: `tests/Feature/Auth/LoginTest.php` y `tests/Feature/Auth/RegisterTest.php`.
+- [ ] **Autenticación, parte B:**
+  - Recuperación de contraseña (`/forgot-password` y `/reset-password/{token}`) con el broker de contraseñas de Laravel; la respuesta no revela si el correo está registrado. En local el correo se escribe en `storage/logs/laravel.log` (`MAIL_MAILER=log`).
+  - Perfil de usuario (`/profile`): edición de nombre y correo, y cambio de contraseña con verificación de la contraseña actual.
+  - Pruebas: `tests/Feature/Auth/PasswordResetTest.php` y `tests/Feature/ProfileTest.php`.
 - [ ] **Roles y Permisos con Spatie:**
   - Instalar `spatie/laravel-permission`.
   - Definir roles: `admin`, `cliente`, `invitado`.

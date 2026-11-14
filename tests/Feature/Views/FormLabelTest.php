@@ -5,6 +5,9 @@
 
 //     $response->assertStatus(200);
 // });
+use App\Models\User;
+
+beforeEach(fn () => $this->actingAs(User::factory()->create()));
 
 it('muestra el asterisco cuando el campo es obligatorio', function () {
     $this->blade('<x-form.label for="name" required>Nombre</x-form.label>')

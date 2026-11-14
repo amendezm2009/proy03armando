@@ -2,6 +2,9 @@
 
 use App\Models\Classification;
 use Illuminate\Database\Eloquent\Factories\Sequence;
+use App\Models\User;
+
+beforeEach(fn () => $this->actingAs(User::factory()->create()));
 
 describe('paginación', function () {
     it('muestra 10 clasificaciones por página por defecto', function () {

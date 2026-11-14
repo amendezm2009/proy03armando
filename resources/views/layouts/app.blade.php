@@ -38,18 +38,20 @@
 
             <div class="collapse navbar-collapse" id="navbarMain">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->is('classifications*') ? 'active fw-semibold' : '' }}"
-                            href="{{ Route::has('classifications.index') ? route('classifications.index') : url('/classifications') }}">
-                            <i class="bi bi-tags me-1"></i> Clasificaciones
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-white-50" href="#" tabindex="-1" aria-disabled="true">
-                            <i class="bi bi-boxes me-1"></i> Productos <span
-                                class="badge bg-secondary ms-1">Próx.</span>
-                        </a>
-                    </li>
+                    @auth
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('classifications.*') ? 'active fw-semibold' : '' }}"
+                                href="{{ route('classifications.index') }}">
+                                <i class="bi bi-tags me-1"></i> Clasificaciones
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white-50" href="#" tabindex="-1" aria-disabled="true">
+                                <i class="bi bi-boxes me-1"></i> Productos <span
+                                    class="badge bg-secondary ms-1">Próx.</span>
+                            </a>
+                        </li>
+                    @endauth
                 </ul>
 
                 <ul class="navbar-nav ms-auto align-items-lg-center">
@@ -57,16 +59,32 @@
                         <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="userMenu"
                             role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-person-circle fs-5"></i>
-                            <span>Invitado</span>
+                            <span>{{ auth()->user()?->name ?? 'Invitado' }}</span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="userMenu">
-                            <li>
-                                <h6 class="dropdown-header">Sesión no iniciada</h6>
-                            </li>
-                            <li><a class="dropdown-item" href="#"><i
-                                        class="bi bi-box-arrow-in-right me-2 text-primary"></i>Iniciar Sesión</a></li>
-                            <li><a class="dropdown-item" href="#"><i
-                                        class="bi bi-person-plus me-2 text-success"></i>Registrarse</a></li>
+                            @auth
+                                <li>
+                                    <h6 class="dropdown-header">{{ auth()->user()->email }}</h6>
+                                </li>
+                                <li>
+                                    <form method="POST" action="{{ route('logout') }}">
+                                        @csrf
+                                        <button type="submit" class="dropdown-item">
+                                            <i class="bi bi-box-arrow-right me-2 text-danger"></i>Cerrar sesión
+                                        </button>
+                                    </form>
+                                </li>
+                            @endauth
+                            @guest
+                                <li>
+                                    <h6 class="dropdown-header">Sesión no iniciada</h6>
+                                </li>
+                                <li><a class="dropdown-item" href="{{ route('login') }}"><i
+                                            class="bi bi-box-arrow-in-right me-2 text-primary"></i>Iniciar Sesión</a>
+                                </li>
+                                <li><a class="dropdown-item" href="{{ route('register') }}"><i
+                                            class="bi bi-person-plus me-2 text-success"></i>Registrarse</a></li>
+                            @endguest
                         </ul>
                     </li>
                 </ul>
