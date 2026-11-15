@@ -1,7 +1,11 @@
 <?php
 
 use App\Models\Classification;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Sequence;
+use Laravel\Sanctum\Sanctum;
+
+beforeEach(fn () => Sanctum::actingAs(User::factory()->create()));
 
 describe('filtros', function () {
     it('filtra por texto', function () {

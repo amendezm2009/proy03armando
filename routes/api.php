@@ -1,11 +1,15 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ClassificationController;
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
+use App\Http\Controllers\Api\TokenController;
+use Illuminate\Support\Facades\Route;
 
-Route::apiResource('classifications', ClassificationController::class)
-    ->names('api.classifications');
+Route::post('login', [TokenController::class, 'store'])->name('api.login');
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('logout', [TokenController::class, 'destroy'])->name('api.logout');
+    Route::get('user', [TokenController::class, 'show'])->name('api.user');
+
+    Route::apiResource('classifications', ClassificationController::class)
+        ->names('api.classifications');
+});

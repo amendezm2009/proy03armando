@@ -104,7 +104,7 @@ flowchart TD
   - Endpoint web: `POST /classifications/import` (`.xlsx`/`.csv`, máx. 2 MB), con reporte de errores por fila.
 - [x] **Controlador Dual:**
   - Web Controller (`ClassificationController`) con vistas Blade (`resources/views/classifications/`); el listado usa filtros y paginación en servidor (sin DataTables). Requiere sesión iniciada desde la Fase 3.
-  - API Controller (`Api\ClassificationController`) con `ClassificationResource` y rutas `apiResource` (`/api/classifications`, nombres `api.classifications.*`). Aún sin autenticación: se protege en la Fase 3.
+  - API Controller (`Api\ClassificationController`) con `ClassificationResource` y rutas `apiResource` (`/api/classifications`, nombres `api.classifications.*`). Requiere token de Sanctum desde la Fase 3.
 - [x] **Pruebas Automatizadas (Pest):**
   - `tests/Feature/ClassificationControllerTest.php` (CRUD web, exportación e importación), `tests/Feature/Api/ClassificationControllerTest.php` (200, 201, 204, 404, 422, `PUT` y `PATCH`), `ClassificationFilterTest.php` en `tests/Feature/` y `tests/Feature/Api/` (filtros y paginación) y `tests/Feature/ErrorHandlingTest.php`.
 - [x] **Cierre del módulo:** manejo centralizado de errores en `bootstrap/app.php` (`QueryException`: 409 por duplicado, 503 por falla de base de datos) y páginas de error personalizadas autónomas (`403`, `404`, `419`, `500`, `503`) en `resources/views/errors/`; la `503` se recarga sola cada 30 segundos (`<meta http-equiv="refresh">`) para recuperarse cuando la base de datos vuelve.
@@ -135,10 +135,14 @@ flowchart TD
   - `/admin/dashboard`: Gestión de usuarios, métricas de inventario y catálogos.
   - `/cliente/dashboard`: Catálogo de productos, carrito/pedidos y perfil.
   - `/invitado/catalogo`: Vista pública de productos sin permisos de edición.
-- [ ] **Seguridad de APIs con Laravel Sanctum:**
-  - Sanctum ya está instalado (`php artisan install:api`: `routes/api.php` y migración `personal_access_tokens`).
-  - Endpoints de autenticación `/api/login` y `/api/logout`.
-  - Proteger los endpoints de clasificaciones y productos con middleware `auth:sanctum` y políticas `can:...`.
+- [x] **Autenticación de la API con Laravel Sanctum (tokens):**
+  - Sanctum ya estaba instalado (`php artisan install:api`: `routes/api.php` y migración `personal_access_tokens`); el modelo `User` usa `HasApiTokens`.
+  - `POST /api/login` devuelve un token Bearer y los datos del usuario (`UserResource`); reutiliza `Auth\LoginRequest`, con el mismo bloqueo tras 5 intentos fallidos que la web. `POST /api/logout` revoca solo el token usado. `GET /api/user` devuelve el usuario del token.
+  - Los endpoints de clasificaciones exigen `auth:sanctum`; sin token responden `401` en JSON.
+  - Pruebas: `tests/Feature/Api/TokenControllerTest.php`; las pruebas de clasificaciones de la API se autentican con `Sanctum::actingAs`.
+- [ ] **Autorización de la API por rol:**
+  - Políticas `can:...` compartidas entre web y API sobre clasificaciones y productos (depende de los roles de Spatie).
+  - Caducidad de los tokens (`sanctum.expiration`) y límite de peticiones (`throttle`) de la API.
 
 ---
 
@@ -210,6 +214,31 @@ flowchart TD
    # npm run dev
    ```
 
+
+---
+
+## 🔌 Uso de la API
+
+Todas las peticiones llevan la cabecera `Accept: application/json`.
+
+1. Obtener un token (el seeder crea `test@example.com` / `password`):
+   ```bash
+   curl -X POST http://localhost:8000/api/login -H "Accept: application/json" -d "email=test@example.com" -d "password=password"
+   ```
+   Respuesta: `{"data": {"id": 1, "name": "...", "email": "..."}, "token": "1|abc...", "token_type": "Bearer"}`.
+2. Usar el token en cada petición:
+   ```bash
+   curl http://localhost:8000/api/classifications -H "Accept: application/json" -H "Authorization: Bearer 1|abc..."
+   ```
+3. Cerrar sesión (revoca ese token):
+   ```bash
+   curl -X POST http://localhost:8000/api/logout -H "Accept: application/json" -H "Authorization: Bearer 1|abc..."
+   ```
+
+| Respuesta | Significado |
+|---|---|
+| `401` | Falta el token, es inválido o fue revocado. |
+| `422` | Credenciales incorrectas, datos inválidos o demasiados intentos de acceso. |
 
 ---
 

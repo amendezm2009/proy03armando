@@ -7,6 +7,10 @@
 // });
 
 use App\Models\Classification;
+use App\Models\User;
+use Laravel\Sanctum\Sanctum;
+
+beforeEach(fn () => Sanctum::actingAs(User::factory()->create()));
 
 describe('listado', function () {
     it('devuelve 200 con una lista paginada', function () {
