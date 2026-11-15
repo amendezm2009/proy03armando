@@ -1,8 +1,12 @@
 <?php
 
+use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\ClassificationController;
+use App\Http\Controllers\PasswordController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -14,10 +18,19 @@ Route::middleware('guest')->group(function () {
     Route::post('login', [LoginController::class, 'store'])->name('login.store');
     Route::get('register', [RegisterController::class, 'create'])->name('register');
     Route::post('register', [RegisterController::class, 'store'])->name('register.store');
+
+    Route::get('forgot-password', [ForgotPasswordController::class, 'create'])->name('password.request');
+    Route::post('forgot-password', [ForgotPasswordController::class, 'store'])->name('password.email');
+    Route::get('reset-password/{token}', [ResetPasswordController::class, 'create'])->name('password.reset');
+    Route::post('reset-password', [ResetPasswordController::class, 'store'])->name('password.store');
 });
 
 Route::middleware(['auth', 'cache.headers:no_store;no_cache;must_revalidate;max_age=0'])->group(function () {
     Route::post('logout', [LoginController::class, 'destroy'])->name('logout');
+
+    Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('profile/password', [PasswordController::class, 'update'])->name('profile.password.update');
 
     Route::get('classifications/export/excel', [ClassificationController::class, 'export'])->name('classifications.export');
     Route::post('classifications/import', [ClassificationController::class, 'import'])->name('classifications.import');

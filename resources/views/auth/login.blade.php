@@ -29,6 +29,7 @@
         </form>
 
         <x-slot:footer>
+            <div class="mb-1"><a href="{{ route('password.request') }}">¿Olvidaste tu contraseña?</a></div>
             ¿No tienes cuenta? <a href="{{ route('register') }}">Regístrate</a>
         </x-slot:footer>
     </x-auth.card>

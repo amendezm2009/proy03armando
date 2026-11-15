@@ -67,6 +67,11 @@
                                     <h6 class="dropdown-header">{{ auth()->user()->email }}</h6>
                                 </li>
                                 <li>
+                                    <a class="dropdown-item" href="{{ route('profile.edit') }}">
+                                        <i class="bi bi-person-gear me-2 text-primary"></i>Mi perfil
+                                    </a>
+                                </li>
+                                <li>
                                     <form method="POST" action="{{ route('logout') }}">
                                         @csrf
                                         <button type="submit" class="dropdown-item">

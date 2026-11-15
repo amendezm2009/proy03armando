@@ -123,9 +123,9 @@ flowchart TD
   - Las páginas protegidas se envían con `Cache-Control: no-store` para que no se vean con el botón "atrás" tras cerrar sesión.
   - Reglas de nombre, correo y contraseña centralizadas en el trait `Http\Requests\Concerns\UserValidationRules`.
   - Pruebas: `tests/Feature/Auth/LoginTest.php` y `tests/Feature/Auth/RegisterTest.php`.
-- [ ] **Autenticación, parte B:**
-  - Recuperación de contraseña (`/forgot-password` y `/reset-password/{token}`) con el broker de contraseñas de Laravel; la respuesta no revela si el correo está registrado. En local el correo se escribe en `storage/logs/laravel.log` (`MAIL_MAILER=log`).
-  - Perfil de usuario (`/profile`): edición de nombre y correo, y cambio de contraseña con verificación de la contraseña actual.
+- [x] **Autenticación, parte B:**
+  - Recuperación de contraseña (`/forgot-password` y `/reset-password/{token}`) con el broker de contraseñas de Laravel; la respuesta no revela si el correo está registrado. En local el correo se escribe en `storage/logs/laravel.log` (`MAIL_MAILER=log`) y su texto sale en español (`lang/es.json`).
+  - Perfil de usuario (`/profile`): edición de nombre y correo (`ProfileRequest`), y cambio de contraseña con verificación de la contraseña actual (`PasswordUpdateRequest`); ambos reutilizan `UserValidationRules`.
   - Pruebas: `tests/Feature/Auth/PasswordResetTest.php` y `tests/Feature/ProfileTest.php`.
 - [ ] **Roles y Permisos con Spatie:**
   - Instalar `spatie/laravel-permission`.
@@ -209,3 +209,64 @@ flowchart TD
    # php artisan serve
    # npm run dev
    ```
+
+
+---
+
+## ✉️ Correo: prueba local y envío real
+
+La aplicación envía un solo correo: el enlace para restablecer la contraseña (`/forgot-password`).
+
+### Prueba local (sin enviar nada)
+
+Con `MAIL_MAILER=log` el correo no sale; se escribe en `storage/logs/laravel.log`.
+
+1. Verificar en `.env`:
+   ```dotenv
+   MAIL_MAILER=log
+   ```
+2. Tener un usuario registrado. El seeder crea `test@example.com` con contraseña `password`:
+   ```bash
+   php artisan migrate:fresh --seed
+   ```
+3. Abrir `/forgot-password`, escribir el correo y pulsar "Enviar enlace".
+4. Abrir `storage/logs/laravel.log` y buscar al final la línea con `/reset-password/`.
+5. Copiar ese enlace en el navegador, escribir la contraseña nueva e iniciar sesión con ella.
+
+Notas:
+- El enlace caduca en 60 minutos y solo sirve una vez.
+- Solo se genera un enlace por correo cada 60 segundos; un segundo intento inmediato no escribe nada en el log.
+- La pantalla muestra el mismo aviso exista o no la cuenta, así que si no aparece nada en el log, revisar que el correo esté registrado.
+- En el log el enlace puede salir partido en varias líneas (cada una termina en `=`) y con `=3D` en lugar de `=`. Al copiarlo hay que unir las líneas quitando ese `=` final y cambiar `=3D` por `=`.
+
+### Envío real (SMTP)
+
+1. Conseguir los datos SMTP del proveedor (servidor, puerto, usuario y contraseña).
+2. Configurar `.env` (nunca `.env.example` ni el repositorio):
+   ```dotenv
+   MAIL_MAILER=smtp
+   MAIL_SCHEME=null
+   MAIL_HOST=smtp.proveedor.com
+   MAIL_PORT=587
+   MAIL_USERNAME=usuario
+   MAIL_PASSWORD=contraseña
+   MAIL_FROM_ADDRESS="no-responder@midominio.com"
+   MAIL_FROM_NAME="${APP_NAME}"
+   ```
+   Con el puerto 465 usar `MAIL_SCHEME=smtps`.
+3. Poner en `APP_URL` la dirección real del sitio y en `APP_NAME` el nombre que verá el destinatario.
+4. Recargar la configuración:
+   ```bash
+   php artisan config:clear
+   ```
+5. Enviar un correo de prueba:
+   ```bash
+   php artisan tinker --execute 'Mail::raw("Prueba de envío", fn ($m) => $m->to("destinatario@example.com")->subject("Prueba"));'
+   ```
+6. Si llega, repetir el flujo de `/forgot-password` con una cuenta cuyo correo exista de verdad.
+
+Notas:
+- **Gmail:** servidor `smtp.gmail.com`, puerto `587`, usuario la cuenta completa y como contraseña una "contraseña de aplicación" (requiere verificación en dos pasos); la contraseña normal no funciona.
+- El correo se envía dentro de la misma petición, así que no hace falta `php artisan queue:work`.
+- Si falla, el error queda en `storage/logs/laravel.log`.
+- En producción conviene un proveedor de correo transaccional y configurar SPF y DKIM en el dominio para no caer en spam.
