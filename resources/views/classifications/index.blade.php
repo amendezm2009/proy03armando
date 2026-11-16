@@ -12,16 +12,20 @@
         <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
             <span><i class="bi bi-tags me-1"></i> Clasificaciones</span>
             <div class="d-flex flex-wrap gap-2">
-                <a href="{{ route('classifications.create') }}" class="btn btn-primary btn-sm">
-                    <i class="bi bi-plus-lg me-1"></i> Nueva
-                </a>
+                @can(App\PermissionName::CreateClassifications->value)
+                    <a href="{{ route('classifications.create') }}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-lg me-1"></i> Nueva
+                    </a>
+                @endcan
                 <a href="{{ route('classifications.export') }}" class="btn btn-success btn-sm">
                     <i class="bi bi-file-earmark-excel me-1"></i> Exportar Excel
                 </a>
-                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal"
-                    data-bs-target="#importModal">
-                    <i class="bi bi-upload me-1"></i> Importar
-                </button>
+                @can(App\PermissionName::CreateClassifications->value)
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal"
+                        data-bs-target="#importModal">
+                        <i class="bi bi-upload me-1"></i> Importar
+                    </button>
+                @endcan
             </div>
         </div>
 
@@ -89,19 +93,23 @@
                                 </td>
                                 <td>{{ $classification->created_at->format('d/m/Y H:i') }}</td>
                                 <td class="text-end text-nowrap">
-                                    <a href="{{ route('classifications.edit', $classification) }}"
-                                        class="btn btn-outline-primary btn-sm" title="Editar">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
-                                    <form method="POST"
-                                        action="{{ route('classifications.destroy', $classification) }}"
-                                        class="d-inline js-delete-form">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Eliminar">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
+                                    @can(App\PermissionName::UpdateClassifications->value)
+                                        <a href="{{ route('classifications.edit', $classification) }}"
+                                            class="btn btn-outline-primary btn-sm" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                    @endcan
+                                    @can(App\PermissionName::DeleteClassifications->value)
+                                        <form method="POST"
+                                            action="{{ route('classifications.destroy', $classification) }}"
+                                            class="d-inline js-delete-form">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Eliminar">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    @endcan
                                 </td>
                             </tr>
                         @empty
@@ -123,6 +131,7 @@
         </div>
     </div>
 
+    @can(App\PermissionName::CreateClassifications->value)
     <!-- Modal de importación -->
     <div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
         <div class="modal-dialog">
@@ -157,12 +166,13 @@
             </form>
         </div>
     </div>
+    @endcan
 @endsection
 
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            @if ($errors->has('file'))
+            @if ($errors->has('file') && auth()->user()->can(App\PermissionName::CreateClassifications->value))
                 bootstrap.Modal.getOrCreateInstance('#importModal').show();
             @endif
 

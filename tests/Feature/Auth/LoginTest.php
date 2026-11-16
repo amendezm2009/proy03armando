@@ -86,10 +86,9 @@ describe('cierre de sesión', function () {
 
     it('impide que el navegador guarde en caché las páginas protegidas', function () {
         $response = $this->actingAs(User::factory()->create())
-            ->get(route('classifications.index'))
+            ->get(route('profile.edit'))
             ->assertOk();
 
         expect($response->headers->get('Cache-Control'))->toContain('no-store');
     });
 });
-

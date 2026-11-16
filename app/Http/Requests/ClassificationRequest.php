@@ -11,7 +11,7 @@ class ClassificationRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true; // se restringirá con policies en la Fase 3
+        return true; // la autorización se declara en las rutas (App\Http\ResourceAuthorization)
     }
 
     /**

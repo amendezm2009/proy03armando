@@ -1,11 +1,11 @@
 <?php
 
 use App\Models\Classification;
-use App\Models\User;
+use App\RoleName;
 use Illuminate\Database\Eloquent\Factories\Sequence;
 use Laravel\Sanctum\Sanctum;
 
-beforeEach(fn () => Sanctum::actingAs(User::factory()->create()));
+beforeEach(fn () => Sanctum::actingAs(userWithRole(RoleName::Admin)));
 
 describe('filtros', function () {
     it('filtra por texto', function () {

@@ -1,5 +1,8 @@
 <?php
 
+use App\Models\User;
+use App\RoleName;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -44,7 +47,12 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * Crea los roles y permisos y devuelve un usuario con el rol indicado.
+ */
+function userWithRole(RoleName $role): User
 {
-    // ..
+    test()->seed(RolesAndPermissionsSeeder::class);
+
+    return User::factory()->create()->assignRole($role);
 }

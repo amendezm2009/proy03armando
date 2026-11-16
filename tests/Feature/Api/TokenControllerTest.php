@@ -2,6 +2,7 @@
 
 use App\Models\Classification;
 use App\Models\User;
+use App\RoleName;
 use Laravel\Sanctum\PersonalAccessToken;
 
 describe('inicio de sesión', function () {
@@ -110,7 +111,7 @@ describe('rutas protegidas', function () {
     });
 
     it('devuelve 200 en el listado con un token válido', function () {
-        $user = User::factory()->create();
+        $user = userWithRole(RoleName::Cliente);
 
         $this->withToken($user->createToken('api')->plainTextToken)
             ->getJson('/api/classifications')

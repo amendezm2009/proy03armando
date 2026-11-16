@@ -39,12 +39,14 @@
             <div class="collapse navbar-collapse" id="navbarMain">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     @auth
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('classifications.*') ? 'active fw-semibold' : '' }}"
-                                href="{{ route('classifications.index') }}">
-                                <i class="bi bi-tags me-1"></i> Clasificaciones
-                            </a>
-                        </li>
+                        @can(App\PermissionName::ViewClassifications->value)
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('classifications.*') ? 'active fw-semibold' : '' }}"
+                                    href="{{ route('classifications.index') }}">
+                                    <i class="bi bi-tags me-1"></i> Clasificaciones
+                                </a>
+                            </li>
+                        @endcan
                         <li class="nav-item">
                             <a class="nav-link text-white-50" href="#" tabindex="-1" aria-disabled="true">
                                 <i class="bi bi-boxes me-1"></i> Productos <span
