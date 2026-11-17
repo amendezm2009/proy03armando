@@ -17,6 +17,7 @@ class TokenController extends Controller
         return (new UserResource($user))->additional([
             'token' => $user->createToken('api')->plainTextToken,
             'token_type' => 'Bearer',
+            'expires_in' => config('sanctum.expiration') * 60, // retorna el tiempo de expiración en segundos
         ]);
     }
 

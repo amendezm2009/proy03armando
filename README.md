@@ -146,8 +146,15 @@ flowchart TD
   - Pruebas: `tests/Feature/Api/TokenControllerTest.php`; las pruebas de clasificaciones de la API se autentican con `Sanctum::actingAs`.
 - [x] **Autorización de la API por rol:**
   - La API de clasificaciones usa la misma tabla `ResourceAuthorization` que la web; sin permiso responde `403` en JSON. `GET /api/user` incluye los roles del usuario.
-- [ ] **Endurecimiento de la API:**
-  - Caducidad de los tokens (`sanctum.expiration`) y límite de peticiones (`throttle`) de la API.
+- [x] **Endurecimiento de la API:**
+  - Los tokens caducan a los `SANCTUM_TOKEN_EXPIRATION` minutos (480 por defecto, `config/sanctum.php`); el login devuelve `expires_in` en segundos y un token caducado responde `401`. `sanctum:prune-expired` se ejecuta a diario para borrar los caducados (requiere el programador de tareas: `php artisan schedule:work` en local).
+  - Límite de 60 peticiones por minuto, por usuario o por IP si no hay token (`API_REQUESTS_PER_MINUTE` en `.env`, leído en `config/rate_limits.php`; activado con `throttleApi()` en `bootstrap/app.php`); al superarlo responde `429` con la cabecera `Retry-After`.
+  - Pruebas: casos de caducidad y de límite en `tests/Feature/Api/TokenControllerTest.php`.
+- [x] **Límite de intentos por IP en las rutas de acceso (web y API):**
+  - Inicio de sesión: 10 por minuto; registro: 5; solicitar y restablecer contraseña: 5 entre ambas. Los valores se configuran en `.env` (`LOGIN_ATTEMPTS_PER_MINUTE`, `REGISTER_ATTEMPTS_PER_MINUTE`, `PASSWORD_ATTEMPTS_PER_MINUTE`), se leen en `config/rate_limits.php` y se aplican en las rutas con `throttle:login`, `throttle:register` y `throttle:password`.
+  - Se suma al bloqueo por correo + IP del login (5 fallos): este límite frena además a quien prueba correos distintos desde una misma IP.
+  - Al superarlo: página `429` propia en la web (`resources/views/errors/429.blade.php`) y `429` en JSON en la API.
+  - Pruebas: `tests/Feature/Auth/RateLimitTest.php`.
 
 ---
 
@@ -230,7 +237,7 @@ Todas las peticiones llevan la cabecera `Accept: application/json`.
    ```bash
    curl -X POST http://localhost:8000/api/login -H "Accept: application/json" -d "email=test@example.com" -d "password=password"
    ```
-   Respuesta: `{"data": {"id": 1, "name": "...", "email": "...", "roles": ["admin"]}, "token": "1|abc...", "token_type": "Bearer"}`.
+   Respuesta: `{"data": {"id": 1, "name": "...", "email": "...", "roles": ["admin"]}, "token": "1|abc...", "token_type": "Bearer", "expires_in": 28800}`. `expires_in` son los segundos de vida del token; al caducar hay que volver a iniciar sesión.
 2. Usar el token en cada petición:
    ```bash
    curl http://localhost:8000/api/classifications -H "Accept: application/json" -H "Authorization: Bearer 1|abc..."
@@ -245,6 +252,7 @@ Todas las peticiones llevan la cabecera `Accept: application/json`.
 | `401` | Falta el token, es inválido o fue revocado. |
 | `403` | El token es válido, pero el rol del usuario no tiene permiso para esa acción. |
 | `422` | Credenciales incorrectas, datos inválidos o demasiados intentos de acceso. |
+| `429` | Más de 60 peticiones en un minuto, o más de 10 intentos de login por minuto desde la misma IP; la cabecera `Retry-After` indica cuántos segundos esperar. |
 
 ---
 

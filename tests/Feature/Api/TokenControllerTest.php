@@ -69,6 +69,59 @@ describe('usuario autenticado', function () {
     });
 });
 
+describe('caducidad del token', function () {
+    it('informa en el login de los segundos de vida del token', function () {
+        $user = User::factory()->create();
+
+        $this->postJson('/api/login', ['email' => $user->email, 'password' => 'password'])
+            ->assertOk()
+            ->assertJsonPath('expires_in', config('sanctum.expiration') * 60);
+    });
+
+    it('acepta el token justo antes de caducar', function () {
+        $token = User::factory()->create()->createToken('api')->plainTextToken;
+
+        $this->travel(config('sanctum.expiration') - 1)->minutes();
+
+        $this->withToken($token)->getJson('/api/user')->assertOk();
+    });
+
+    it('devuelve 401 cuando el token ha caducado', function () {
+        $token = User::factory()->create()->createToken('api')->plainTextToken;
+
+        $this->travel(config('sanctum.expiration') + 1)->minutes();
+
+        $this->withToken($token)->getJson('/api/user')->assertUnauthorized();
+    });
+});
+
+describe('límite de peticiones', function () {
+    it('devuelve 429 en JSON al superar el límite por minuto', function () {
+        $token = User::factory()->create()->createToken('api')->plainTextToken;
+
+        foreach (range(1, config('rate_limits.api')) as $peticion) {
+            $this->withToken($token)->getJson('/api/user')->assertOk();
+        }
+
+        $this->withToken($token)->getJson('/api/user')
+            ->assertTooManyRequests()
+            ->assertHeader('Retry-After')
+            ->assertJsonStructure(['message']);
+    });
+
+    it('vuelve a aceptar peticiones al pasar un minuto', function () {
+        $token = User::factory()->create()->createToken('api')->plainTextToken;
+
+        foreach (range(1, config('rate_limits.api') + 1) as $peticion) {
+            $this->withToken($token)->getJson('/api/user');
+        }
+
+        $this->travel(61)->seconds();
+
+        $this->withToken($token)->getJson('/api/user')->assertOk();
+    });
+});
+
 describe('cierre de sesión', function () {
     it('devuelve 204 y revoca solo el token usado', function () {
         $user = User::factory()->create();

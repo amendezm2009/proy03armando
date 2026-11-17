@@ -50,7 +50,7 @@ return [
     |
     */
 
-    'expiration' => null,
+    'expiration' => (int) env('SANCTUM_TOKEN_EXPIRATION', 480), // 480 minutos (8 horas)
 
     /*
     |--------------------------------------------------------------------------
