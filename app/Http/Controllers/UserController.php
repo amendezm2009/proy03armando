@@ -3,14 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Actions\ChangeUserStatus;
+use App\Actions\ConfirmPassword;
 use App\Actions\InviteUser;
 use App\Actions\SaveUser;
+use App\Http\Requests\PasswordConfirmationRequest;
 use App\Http\Requests\UserIndexRequest;
 use App\Http\Requests\UserRequest;
 use App\Models\User;
 use App\RoleName;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
@@ -39,8 +40,10 @@ class UserController extends Controller
         return view('users.create', ['roles' => RoleName::cases()]);
     }
 
-    public function store(UserRequest $request, SaveUser $save): RedirectResponse
+    public function store(UserRequest $request, SaveUser $save, ConfirmPassword $confirm): RedirectResponse
     {
+        $confirm->handle($request, $request->validated('current_password'));
+
         $save->handle($request->validated(), $request->user());
 
         $minutes = config('auth.passwords.'.config('auth.defaults.passwords').'.expire');
@@ -56,29 +59,39 @@ class UserController extends Controller
         return view('users.edit', ['user' => $user->load('roles'), 'roles' => RoleName::cases()]);
     }
 
-    public function update(UserRequest $request, User $user, SaveUser $save): RedirectResponse
+    public function update(UserRequest $request, User $user, SaveUser $save, ConfirmPassword $confirm): RedirectResponse
     {
+        if ($request->requiresPasswordConfirmation()) {
+            $confirm->handle($request, $request->validated('current_password'));
+        }
+
         $save->handle($request->validated(), $request->user(), $user);
 
         return to_route('users.index')->with('success', 'Usuario actualizado.');
     }
 
-    public function deactivate(Request $request, User $user, ChangeUserStatus $status): RedirectResponse
+    public function deactivate(PasswordConfirmationRequest $request, User $user, ChangeUserStatus $status, ConfirmPassword $confirm): RedirectResponse
     {
+        $confirm->handle($request, $request->validated('current_password'));
+
         $status->handle($user, $request->user(), false);
 
         return back()->with('success', "Usuario {$user->name} desactivado. Se cerraron sus sesiones.");
     }
 
-    public function activate(Request $request, User $user, ChangeUserStatus $status): RedirectResponse
+    public function activate(PasswordConfirmationRequest $request, User $user, ChangeUserStatus $status, ConfirmPassword $confirm): RedirectResponse
     {
+        $confirm->handle($request, $request->validated('current_password'));
+
         $status->handle($user, $request->user(), true);
 
         return back()->with('success', "Usuario {$user->name} reactivado.");
     }
 
-    public function invite(Request $request, User $user, InviteUser $invite): RedirectResponse
+    public function invite(PasswordConfirmationRequest $request, User $user, InviteUser $invite, ConfirmPassword $confirm): RedirectResponse
     {
+        $confirm->handle($request, $request->validated('current_password'));
+
         $invite->handle($user, $request->user());
 
         return back()->with('success', "Enviamos una nueva invitación a {$user->email}. El enlace anterior dejó de funcionar.");

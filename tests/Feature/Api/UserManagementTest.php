@@ -16,7 +16,7 @@ use Laravel\Sanctum\Sanctum;
  */
 function datosDeUsuarioApi(array $overrides = []): array
 {
-    return ['name' => 'Ana Pérez', 'email' => 'ana@example.com', 'role' => RoleName::Cliente->value, ...$overrides];
+    return ['name' => 'Ana Pérez', 'email' => 'ana@example.com', 'role' => RoleName::Cliente->value, 'current_password' => 'password', ...$overrides];
 }
 
 describe('acceso', function () {
@@ -201,7 +201,7 @@ describe('administración', function () {
         $user = User::factory()->create()->assignRole(RoleName::Cliente);
         $token = $user->createToken('api')->plainTextToken;
 
-        $this->patchJson("/api/users/{$user->id}/deactivate")
+        $this->patchJson("/api/users/{$user->id}/deactivate", ['current_password' => 'password'])
             ->assertOk()
             ->assertJsonPath('data.is_active', false);
 
@@ -210,12 +210,12 @@ describe('administración', function () {
     });
 
     it('niega desactivarse a sí mismo y desactivar a la única persona administradora activa', function () {
-        $this->patchJson("/api/users/{$this->admin->id}/deactivate")->assertForbidden();
+        $this->patchJson("/api/users/{$this->admin->id}/deactivate", ['current_password' => 'password'])->assertForbidden();
 
         $gestor = User::factory()->create()->assignRole(RoleName::Cliente)->givePermissionTo(PermissionName::DeactivateUsers);
         Sanctum::actingAs($gestor);
 
-        $this->patchJson("/api/users/{$this->admin->id}/deactivate")->assertForbidden();
+        $this->patchJson("/api/users/{$this->admin->id}/deactivate", ['current_password' => 'password'])->assertForbidden();
 
         expect($this->admin->fresh()->is_active)->toBeTrue();
     });
@@ -224,36 +224,36 @@ describe('administración', function () {
         $inactivo = User::factory()->inactive()->create();
         $activo = User::factory()->create();
 
-        $this->patchJson("/api/users/{$inactivo->id}/activate")->assertOk()->assertJsonPath('data.is_active', true);
-        $this->patchJson("/api/users/{$activo->id}/activate")->assertForbidden();
+        $this->patchJson("/api/users/{$inactivo->id}/activate", ['current_password' => 'password'])->assertOk()->assertJsonPath('data.is_active', true);
+        $this->patchJson("/api/users/{$activo->id}/activate", ['current_password' => 'password'])->assertForbidden();
     });
 
     it('reenvía la invitación con 204 y la limita por minuto', function () {
         $user = User::factory()->invited()->create();
 
-        $this->postJson("/api/users/{$user->id}/invitation")->assertNoContent();
+        $this->postJson("/api/users/{$user->id}/invitation", ['current_password' => 'password'])->assertNoContent();
         Notification::assertSentTo($user, WelcomeNotification::class);
 
         foreach (range(2, config('rate_limits.invitation')) as $intento) {
-            $this->postJson("/api/users/{$user->id}/invitation")->assertNoContent();
+            $this->postJson("/api/users/{$user->id}/invitation", ['current_password' => 'password'])->assertNoContent();
         }
 
-        $this->postJson("/api/users/{$user->id}/invitation")->assertTooManyRequests()->assertHeader('Retry-After');
+        $this->postJson("/api/users/{$user->id}/invitation", ['current_password' => 'password'])->assertTooManyRequests()->assertHeader('Retry-After');
     });
 
     it('no invita a una cuenta desactivada ni a uno mismo', function () {
         $inactivo = User::factory()->inactive()->invited()->create();
 
-        $this->postJson("/api/users/{$inactivo->id}/invitation")->assertForbidden();
-        $this->postJson("/api/users/{$this->admin->id}/invitation")->assertForbidden();
+        $this->postJson("/api/users/{$inactivo->id}/invitation", ['current_password' => 'password'])->assertForbidden();
+        $this->postJson("/api/users/{$this->admin->id}/invitation", ['current_password' => 'password'])->assertForbidden();
     });
 
     it('no reenvía a quien ya definió su contraseña ni a quien nunca fue invitado', function () {
         $aceptada = User::factory()->invited()->create(['invitation_accepted_at' => now()]);
         $normal = User::factory()->create();
 
-        $this->postJson("/api/users/{$aceptada->id}/invitation")->assertForbidden();
-        $this->postJson("/api/users/{$normal->id}/invitation")->assertForbidden();
+        $this->postJson("/api/users/{$aceptada->id}/invitation", ['current_password' => 'password'])->assertForbidden();
+        $this->postJson("/api/users/{$normal->id}/invitation", ['current_password' => 'password'])->assertForbidden();
 
         Notification::assertNothingSent();
     });

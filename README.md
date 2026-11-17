@@ -175,7 +175,13 @@ flowchart TD
   - **Al desactivar:** la persona no puede iniciar sesión (web ni API, con el mismo mensaje que una contraseña incorrecta), no recibe enlaces de recuperación, se revocan sus tokens, se invalida "recordarme" y se borran sus sesiones guardadas. `EnsureUserIsActive` cierra además cualquier sesión o token que siga vivo.
   - **Protecciones:** nadie se desactiva ni cambia su propio rol; no se puede desactivar ni degradar a la última persona administradora activa; `name`, `email` y `role` son lo único que se acepta (`is_active`, `avatar_path` y la contraseña no se asignan en masa); el rol se aplica con `syncRoles`. Cada alta, cambio, desactivación, reactivación e invitación queda en el log con el id de quien la hizo.
   - Acciones: `SaveUser`, `InviteUser` y `ChangeUserStatus` (compartidas por web y API). Pruebas: `tests/Feature/UserManagementTest.php` y `tests/Feature/Api/UserManagementTest.php`.
-  - Pendiente (etapas 2 y 3): modal de confirmación de contraseña con 3 intentos para las acciones sensibles, y avatar con iniciales.
+  - Pendiente (etapa 3): avatar con iniciales.
+- [x] **Gestión de usuarios, etapa 2: confirmación de contraseña en una modal:**
+  - Piden la contraseña de quien actúa: crear usuario, cambiar el **rol o el correo** de una cuenta (cambiar solo el nombre no la pide), desactivar, reactivar y reenviar la invitación. Cambiar el correo se añadió a lo previsto porque con él se recupera la cuenta.
+  - Componente `<x-password-confirm-modal />` (una por página, con las instrucciones de uso en su comentario) y lógica en `resources/js/app.js`: en el listado, botones con `data-confirm-action`; en el alta y la edición, el formulario lleva `data-password-confirm="always"` o `"changed"` (la edición solo la pide si cambian `role` o `email`). Sin formularios ocultos ni `confirm()` del navegador.
+  - **La verificación es del servidor**, no de la ventana modal: `UserRequest::requiresPasswordConfirmation()` y `PasswordConfirmationRequest` exigen `current_password` y `App\Actions\ConfirmPassword` la comprueba con el límite de **3 intentos** (compartido con el cambio de contraseña del perfil y con la API). Cada fallo vuelve a abrir la modal con "Te quedan N intentos"; al tercero se cierra la sesión (web) o se revoca el token usado y se responde `403` (API). Quien se salte la modal recibe el mismo error del servidor.
+  - La contraseña se escribe con `<x-form.password>` (con mostrar/ocultar, sin autorrelleno) y nunca se devuelve al formulario.
+  - Pruebas: `tests/Feature/PasswordConfirmationModalTest.php` y `tests/Feature/Api/PasswordConfirmationTest.php`; las de usuarios envían `current_password`.
 
 ---
 
@@ -272,7 +278,15 @@ Todas las peticiones llevan la cabecera `Accept: application/json`.
 |---|---|
 | `401` | Falta el token, es inválido o fue revocado. |
 | `403` | El token es válido, pero el rol del usuario no tiene permiso para esa acción. |
-| `422` | Credenciales incorrectas, datos inválidos o demasiados intentos de acceso. |
+| `422` | Credenciales incorrectas, datos inválidos o demasiados intentos de acceso. En las acciones sensibles de `/api/users` también indica que falta `current_password` o es incorrecta (con los intentos que quedan). |
+
+Las acciones sensibles de `/api/users` (crear, cambiar el rol o el correo, desactivar, reactivar e invitar) piden en el cuerpo la contraseña de quien las hace:
+
+```bash
+curl -X PATCH http://localhost:8000/api/users/5/deactivate -H "Accept: application/json" -H "Authorization: Bearer 1|abc..." -d "current_password=password"
+```
+
+Tras 3 contraseñas incorrectas seguidas el token usado se revoca y la respuesta es `403`; hay que iniciar sesión de nuevo.
 | `429` | Más de 60 peticiones en un minuto, o más de 10 intentos de login por minuto desde la misma IP; la cabecera `Retry-After` indica cuántos segundos esperar. |
 
 ---

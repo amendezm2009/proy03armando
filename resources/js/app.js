@@ -73,3 +73,127 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
+// Modal de confirmación de contraseña (<x-password-confirm-modal>). Va después de la validación del
+// cliente para que esa se ejecute primero. La contraseña la verifica siempre el servidor.
+document.addEventListener('DOMContentLoaded', () => {
+    const modalElement = document.querySelector('[data-password-confirm-modal]');
+
+    if (!modalElement) {
+        return;
+    }
+
+    const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+    const modalForm = modalElement.querySelector('[data-password-confirm-form]');
+    const passwordInput = modalForm.querySelector('input[name="current_password"]');
+    const methodInput = modalForm.querySelector('input[name="_method"]');
+    const titleInput = modalForm.querySelector('input[name="confirm_title"]');
+    const messageInput = modalForm.querySelector('input[name="confirm_message"]');
+    const targetForm = document.querySelector('form[data-password-confirm]');
+
+    const describe = (title, message) => {
+        titleInput.value = title ?? '';
+        messageInput.value = message ?? '';
+        modalElement.querySelector('[data-confirm-title]').textContent = title || 'Confirma tu contraseña';
+        modalElement.querySelector('[data-confirm-message]').textContent = message ?? '';
+    };
+
+    // Acciones sueltas: botones con data-confirm-action (listados)
+    document.addEventListener('click', (event) => {
+        const trigger = event.target.closest('[data-confirm-action]');
+
+        if (!trigger) {
+            return;
+        }
+
+        event.preventDefault();
+        modalForm.dataset.mode = 'action';
+        modalForm.action = trigger.dataset.confirmAction;
+        methodInput.value = trigger.dataset.confirmMethod || 'POST';
+        describe(trigger.dataset.confirmTitle, trigger.dataset.confirmMessage);
+        modal.show();
+    });
+
+    // Formularios de alta o edición: data-password-confirm="always" | "changed"
+    if (targetForm) {
+        const needsConfirmation = () => {
+            if (targetForm.dataset.passwordConfirm === 'always') {
+                return true;
+            }
+
+            return (targetForm.dataset.passwordConfirmFields || '').split(',').some((name) => {
+                const field = targetForm.querySelector(`[name="${name}"]:not(:disabled)`);
+
+                if (!field) {
+                    return false;
+                }
+
+                if (field.tagName === 'SELECT') {
+                    const initial = [...field.options].find((option) => option.defaultSelected);
+
+                    return field.value !== (initial ? initial.value : '');
+                }
+
+                return field.value !== field.defaultValue;
+            });
+        };
+
+        targetForm.addEventListener('submit', (event) => {
+            if (
+                targetForm.dataset.passwordConfirmed === 'true'
+                || event.defaultPrevented
+                || !targetForm.checkValidity()
+                || !needsConfirmation()
+            ) {
+                return;
+            }
+
+            event.preventDefault();
+            modalForm.dataset.mode = 'form';
+            describe(targetForm.dataset.confirmTitle, targetForm.dataset.confirmMessage);
+            modal.show();
+        });
+
+        modalForm.addEventListener('submit', (event) => {
+            if (modalForm.dataset.mode !== 'form') {
+                return;
+            }
+
+            event.preventDefault();
+
+            let hidden = targetForm.querySelector('input[type="hidden"][name="current_password"]');
+
+            if (!hidden) {
+                hidden = document.createElement('input');
+                hidden.type = 'hidden';
+                hidden.name = 'current_password';
+                targetForm.appendChild(hidden);
+            }
+
+            hidden.value = passwordInput.value;
+            targetForm.dataset.passwordConfirmed = 'true';
+            modal.hide();
+            targetForm.requestSubmit();
+        });
+    }
+
+    modalElement.addEventListener('shown.bs.modal', () => passwordInput.focus());
+
+    modalElement.addEventListener('hidden.bs.modal', () => {
+        passwordInput.value = '';
+        passwordInput.type = 'password';
+    });
+
+    // Contraseña incorrecta: el servidor volvió a esta página con el error; se reabre la modal
+    if (modalElement.dataset.reopen === 'true') {
+        if (targetForm) {
+            modalForm.dataset.mode = 'form';
+            describe(targetForm.dataset.confirmTitle, targetForm.dataset.confirmMessage);
+        } else {
+            modalForm.dataset.mode = 'action';
+            describe(titleInput.value, messageInput.value);
+        }
+
+        modal.show();
+    }
+});

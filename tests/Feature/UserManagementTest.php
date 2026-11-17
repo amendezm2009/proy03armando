@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Password;
  */
 function datosDeUsuario(array $overrides = []): array
 {
-    return ['name' => 'Ana Pérez', 'email' => 'ana@example.com', 'role' => RoleName::Cliente->value, ...$overrides];
+    return ['name' => 'Ana Pérez', 'email' => 'ana@example.com', 'role' => RoleName::Cliente->value, 'current_password' => 'password', ...$overrides];
 }
 
 describe('acceso', function () {
@@ -259,7 +259,7 @@ describe('desactivar y reactivar', function () {
         $user->createToken('api');
         $rememberAnterior = $user->remember_token;
 
-        $this->patch(route('users.deactivate', $user))->assertRedirect()->assertSessionHas('success');
+        $this->patch(route('users.deactivate', $user), ['current_password' => 'password'])->assertRedirect()->assertSessionHas('success');
 
         expect($user->fresh())
             ->is_active->toBeFalse()
@@ -276,7 +276,7 @@ describe('desactivar y reactivar', function () {
         $sesion('sesion-del-usuario', $user->id);
         $sesion('sesion-ajena', $this->admin->id);
 
-        $this->patch(route('users.deactivate', $user));
+        $this->patch(route('users.deactivate', $user), ['current_password' => 'password']);
 
         expect(DB::table('sessions')->where('user_id', $user->id)->count())->toBe(0)
             ->and(DB::table('sessions')->where('id', 'sesion-ajena')->count())->toBe(1);
@@ -305,7 +305,7 @@ describe('desactivar y reactivar', function () {
     });
 
     it('no deja desactivarse a sí mismo', function () {
-        $this->patch(route('users.deactivate', $this->admin))->assertForbidden();
+        $this->patch(route('users.deactivate', $this->admin), ['current_password' => 'password'])->assertForbidden();
 
         expect($this->admin->fresh()->is_active)->toBeTrue();
     });
@@ -313,7 +313,7 @@ describe('desactivar y reactivar', function () {
     it('no deja desactivar a la única persona administradora activa', function () {
         $gestor = User::factory()->create()->assignRole(RoleName::Cliente)->givePermissionTo(PermissionName::DeactivateUsers);
 
-        $this->actingAs($gestor)->patch(route('users.deactivate', $this->admin))->assertForbidden();
+        $this->actingAs($gestor)->patch(route('users.deactivate', $this->admin), ['current_password' => 'password'])->assertForbidden();
 
         expect($this->admin->fresh()->is_active)->toBeTrue();
     });
@@ -321,7 +321,7 @@ describe('desactivar y reactivar', function () {
     it('permite desactivar a otro administrador si queda uno activo', function () {
         $otro = User::factory()->create()->assignRole(RoleName::Admin);
 
-        $this->patch(route('users.deactivate', $otro))->assertRedirect();
+        $this->patch(route('users.deactivate', $otro), ['current_password' => 'password'])->assertRedirect();
 
         expect($otro->fresh()->is_active)->toBeFalse();
     });
@@ -330,14 +330,14 @@ describe('desactivar y reactivar', function () {
         $inactivo = User::factory()->inactive()->create();
         $activo = User::factory()->create();
 
-        $this->patch(route('users.deactivate', $inactivo))->assertForbidden();
-        $this->patch(route('users.activate', $activo))->assertForbidden();
+        $this->patch(route('users.deactivate', $inactivo), ['current_password' => 'password'])->assertForbidden();
+        $this->patch(route('users.activate', $activo), ['current_password' => 'password'])->assertForbidden();
     });
 
     it('reactiva la cuenta y vuelve a permitir el acceso', function () {
         $user = User::factory()->inactive()->create();
 
-        $this->patch(route('users.activate', $user))->assertRedirect()->assertSessionHas('success');
+        $this->patch(route('users.activate', $user), ['current_password' => 'password'])->assertRedirect()->assertSessionHas('success');
         auth()->logout();
 
         expect($user->fresh()->is_active)->toBeTrue();
@@ -437,7 +437,7 @@ describe('invitación', function () {
     it('reenvía la invitación a una cuenta pendiente y avisa que el enlace anterior ya no sirve', function () {
         $user = User::factory()->invited()->create();
 
-        $this->post(route('users.invitation', $user))
+        $this->post(route('users.invitation', $user), ['current_password' => 'password'])
             ->assertRedirect()
             ->assertSessionHas('success', "Enviamos una nueva invitación a {$user->email}. El enlace anterior dejó de funcionar.");
 
@@ -447,7 +447,7 @@ describe('invitación', function () {
     it('actualiza la fecha de envío al reenviar', function () {
         $user = User::factory()->invited()->create(['invited_at' => now()->subDays(3)]);
 
-        $this->post(route('users.invitation', $user));
+        $this->post(route('users.invitation', $user), ['current_password' => 'password']);
 
         expect($user->fresh()->invited_at->isAfter(now()->subMinute()))->toBeTrue();
     });
@@ -456,7 +456,7 @@ describe('invitación', function () {
         $user = User::factory()->invited()->create();
         $anterior = Password::createToken($user);
 
-        $this->post(route('users.invitation', $user));
+        $this->post(route('users.invitation', $user), ['current_password' => 'password']);
 
         expect(Password::tokenExists($user, $anterior))->toBeFalse();
     });
@@ -466,16 +466,16 @@ describe('invitación', function () {
         $normal = User::factory()->create();
 
         $this->get(route('users.index'))
-            ->assertSee(route('users.invitation', $pendiente))
-            ->assertDontSee(route('users.invitation', $normal));
+            ->assertSee(route('users.invitation', $pendiente), ['current_password' => 'password'])
+            ->assertDontSee(route('users.invitation', $normal), ['current_password' => 'password']);
     });
 
     it('niega reenviar a quien ya definió su contraseña o nunca fue invitado', function () {
         $aceptada = User::factory()->invited()->create(['invitation_accepted_at' => now()]);
         $normal = User::factory()->create();
 
-        $this->post(route('users.invitation', $aceptada))->assertForbidden();
-        $this->post(route('users.invitation', $normal))->assertForbidden();
+        $this->post(route('users.invitation', $aceptada), ['current_password' => 'password'])->assertForbidden();
+        $this->post(route('users.invitation', $normal), ['current_password' => 'password'])->assertForbidden();
 
         Notification::assertNothingSent();
     });
@@ -483,8 +483,8 @@ describe('invitación', function () {
     it('no invita a una cuenta desactivada ni a uno mismo', function () {
         $inactivo = User::factory()->inactive()->invited()->create();
 
-        $this->post(route('users.invitation', $inactivo))->assertForbidden();
-        $this->post(route('users.invitation', $this->admin))->assertForbidden();
+        $this->post(route('users.invitation', $inactivo), ['current_password' => 'password'])->assertForbidden();
+        $this->post(route('users.invitation', $this->admin), ['current_password' => 'password'])->assertForbidden();
 
         Notification::assertNothingSent();
     });
@@ -493,16 +493,16 @@ describe('invitación', function () {
         $user = User::factory()->invited()->create();
 
         foreach (range(1, config('rate_limits.invitation')) as $intento) {
-            $this->post(route('users.invitation', $user))->assertRedirect();
+            $this->post(route('users.invitation', $user), ['current_password' => 'password'])->assertRedirect();
         }
 
-        $this->post(route('users.invitation', $user))->assertTooManyRequests();
+        $this->post(route('users.invitation', $user), ['current_password' => 'password'])->assertTooManyRequests();
     });
 
     it('no envía el correo de recuperación genérico, sino el de bienvenida', function () {
         $user = User::factory()->invited()->create();
 
-        $this->post(route('users.invitation', $user));
+        $this->post(route('users.invitation', $user), ['current_password' => 'password']);
 
         Notification::assertSentTo($user, WelcomeNotification::class);
         Notification::assertNotSentTo($user, ResetPassword::class);
@@ -574,7 +574,7 @@ describe('aceptación de la invitación', function () {
         $this->post(route('password.store'), $datosDelEnlace($user, Password::createToken($user)));
 
         $this->actingAs(userWithRole(RoleName::Admin))
-            ->post(route('users.invitation', $user))
+            ->post(route('users.invitation', $user), ['current_password' => 'password'])
             ->assertForbidden();
     });
 

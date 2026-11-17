@@ -35,7 +35,25 @@ class UserRequest extends FormRequest
             'name' => $this->partial($this->nameRules()),
             'email' => $this->partial($this->emailRules($target)),
             'role' => $this->partial(['required', 'string', Rule::enum(RoleName::class)]),
+            ...($this->requiresPasswordConfirmation() ? ['current_password' => ['required', 'string']] : []),
         ];
+    }
+
+    /**
+     * ¿Hay que pedir la contraseña de quien hace el cambio? Siempre al crear; al editar, solo si
+     * cambia el rol (privilegios) o el correo (con él se recupera la cuenta). Cambiar solo el nombre
+     * no la pide. La verifica App\Actions\ConfirmPassword en el controlador, con límite de intentos.
+     */
+    public function requiresPasswordConfirmation(): bool
+    {
+        $target = $this->route('user');
+
+        if (! $target instanceof User) {
+            return true;
+        }
+
+        return ($this->has('role') && $this->input('role') !== $target->getRoleNames()->first())
+            || ($this->has('email') && $this->input('email') !== $target->email);
     }
 
     /**

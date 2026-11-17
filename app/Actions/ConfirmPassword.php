@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
+use Laravel\Sanctum\PersonalAccessToken;
 
 /**
  * Confirma la contraseña de quien ya tiene sesión, con un máximo de intentos.
@@ -28,7 +29,10 @@ use Illuminate\Validation\ValidationException;
  *   - Incorrecta con intentos disponibles: lanza ValidationException sobre "current_password"
  *     indicando cuántos intentos quedan.
  *   - Incorrecta en el último intento, o contador ya agotado (aunque la contraseña sea
- *     correcta): cierra la sesión y redirige al login con un aviso.
+ *     correcta): en la web cierra la sesión y redirige al login con un aviso; en la API revoca
+ *     el token usado y responde 403 en JSON.
+ *   - Cada fallo deja en la sesión "confirm_action" (ruta y método) para que la modal de
+ *     confirmación (<x-password-confirm-modal>) se vuelva a abrir sobre la misma acción.
  *
  * El contador es por usuario y se reinicia también al iniciar sesión (AppServiceProvider).
  * El máximo y la caducidad se configuran en config/auth.php ("confirmation").
@@ -71,22 +75,37 @@ class ConfirmPassword
 
         $remaining = RateLimiter::remaining($key, $maxAttempts);
 
+        // Qué acción se intentó, para que la modal de confirmación vuelva a abrirse sobre ella (solo la ruta).
+        if ($request->hasSession()) {
+            $request->session()->flash('confirm_action', ['url' => $request->getPathInfo(), 'method' => $request->method()]);
+        }
+
         throw ValidationException::withMessages([
             'current_password' => trans_choice('auth.password_attempts', $remaining, ['remaining' => $remaining]),
         ]);
     }
 
     /**
-     * Cierra la sesión web y redirige al login.
+     * Web: cierra la sesión y redirige al login. API: revoca el token usado y responde 403 en JSON.
      *
      * @throws HttpResponseException
      */
     private function lockOut(Request $request, Authenticatable $user): never
     {
-        Log::warning('Sesión cerrada por demasiados intentos de confirmar la contraseña.', [
+        Log::warning('Acceso cerrado por demasiados intentos de confirmar la contraseña.', [
             'user_id' => $user->getAuthIdentifier(),
             'ip' => $request->ip(),
         ]);
+
+        if ($request->is('api/*') || $request->expectsJson()) {
+            $token = $user->currentAccessToken();
+
+            if ($token instanceof PersonalAccessToken) {
+                $token->delete();
+            }
+
+            throw new HttpResponseException(response()->json(['message' => __('auth.password_lockout_api')], 403));
+        }
 
         Auth::logout();
 

@@ -102,39 +102,34 @@
 
                                     @can(App\PermissionName::CreateUsers->value)
                                         @can('invite', $user)
-                                            <form method="POST" action="{{ route('users.invitation', $user) }}" class="d-inline">
-                                                @csrf
-                                                <button type="submit" class="btn btn-outline-secondary btn-sm"
-                                                    title="Reenviar invitación (el enlace anterior dejará de funcionar)">
-                                                    <i class="bi bi-envelope"></i>
-                                                </button>
-                                            </form>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                                data-confirm-action="{{ route('users.invitation', $user) }}"
+                                                data-confirm-method="POST" data-confirm-title="Reenviar invitación"
+                                                data-confirm-message="Se enviará un correo nuevo a {{ $user->email }} y el enlace anterior dejará de funcionar."
+                                                title="Reenviar invitación (el enlace anterior dejará de funcionar)">
+                                                <i class="bi bi-envelope"></i>
+                                            </button>
                                         @endcan
                                     @endcan
 
                                     @can(App\PermissionName::DeactivateUsers->value)
                                         @can('deactivate', $user)
-                                            <form method="POST" action="{{ route('users.deactivate', $user) }}"
-                                                class="d-inline"
-                                                data-confirm="¿Desactivar a {{ $user->name }}? Se cerrarán sus sesiones.">
-                                                @csrf
-                                                @method('PATCH')
-                                                <button type="submit" class="btn btn-outline-danger btn-sm"
-                                                    title="Desactivar">
-                                                    <i class="bi bi-person-slash"></i>
-                                                </button>
-                                            </form>
+                                            <button type="button" class="btn btn-outline-danger btn-sm"
+                                                data-confirm-action="{{ route('users.deactivate', $user) }}"
+                                                data-confirm-method="PATCH" data-confirm-title="Desactivar usuario"
+                                                data-confirm-message="¿Desactivar a {{ $user->name }}? No podrá iniciar sesión y se cerrarán sus sesiones y tokens."
+                                                title="Desactivar">
+                                                <i class="bi bi-person-slash"></i>
+                                            </button>
                                         @endcan
                                         @can('activate', $user)
-                                            <form method="POST" action="{{ route('users.activate', $user) }}"
-                                                class="d-inline">
-                                                @csrf
-                                                @method('PATCH')
-                                                <button type="submit" class="btn btn-outline-success btn-sm"
-                                                    title="Reactivar">
-                                                    <i class="bi bi-person-check"></i>
-                                                </button>
-                                            </form>
+                                            <button type="button" class="btn btn-outline-success btn-sm"
+                                                data-confirm-action="{{ route('users.activate', $user) }}"
+                                                data-confirm-method="PATCH" data-confirm-title="Reactivar usuario"
+                                                data-confirm-message="¿Reactivar a {{ $user->name }}? Podrá volver a iniciar sesión."
+                                                title="Reactivar">
+                                                <i class="bi bi-person-check"></i>
+                                            </button>
                                         @endcan
                                     @endcan
                                 </td>
@@ -155,18 +150,6 @@
             @endunless
         </div>
     </div>
-@endsection
 
-@push('scripts')
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('form[data-confirm]').forEach(function(form) {
-                form.addEventListener('submit', function(event) {
-                    if (!confirm(form.dataset.confirm)) {
-                        event.preventDefault();
-                    }
-                });
-            });
-        });
-    </script>
-@endpush
+    <x-password-confirm-modal />
+@endsection
