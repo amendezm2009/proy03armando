@@ -68,10 +68,18 @@ final class ResourceAuthorization
 
     /**
      * Protege todas las acciones de un recurso con los permisos "{recurso}.{habilidad}".
+     *
+     * $abilities limita qué habilidades se exigen cuando el recurso no tiene las cuatro; por ejemplo,
+     * usuarios no se eliminan, solo se desactivan: apply($routes, 'users', ['view', 'create', 'update']).
+     *
+     * @param  array<int, string>  $abilities
      */
-    public static function apply(PendingResourceRegistration $routes, string $resource): PendingResourceRegistration
-    {
-        foreach (self::ACTIONS_BY_ABILITY as $ability => $actions) {
+    public static function apply(
+        PendingResourceRegistration $routes,
+        string $resource,
+        array $abilities = ['view', 'create', 'update', 'delete'],
+    ): PendingResourceRegistration {
+        foreach (array_intersect_key(self::ACTIONS_BY_ABILITY, array_flip($abilities)) as $ability => $actions) {
             $routes->middlewareFor($actions, self::needs(PermissionName::from("{$resource}.{$ability}")));
         }
 

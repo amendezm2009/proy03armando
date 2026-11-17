@@ -47,6 +47,14 @@
                                 </a>
                             </li>
                         @endcan
+                        @can(App\PermissionName::ViewUsers->value)
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('users.*') ? 'active fw-semibold' : '' }}"
+                                    href="{{ route('users.index') }}">
+                                    <i class="bi bi-people me-1"></i> Usuarios
+                                </a>
+                            </li>
+                        @endcan
                         <li class="nav-item">
                             <a class="nav-link text-white-50" href="#" tabindex="-1" aria-disabled="true">
                                 <i class="bi bi-boxes me-1"></i> Productos <span

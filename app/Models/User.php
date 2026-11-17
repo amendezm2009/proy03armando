@@ -3,21 +3,37 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\RoleName;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
+/*
+ * is_active, avatar_path, invited_at e invitation_accepted_at no están en Fillable a propósito:
+ * no se pueden asignar en masa desde un formulario o una petición; solo las acciones de
+ * App\Actions y el restablecimiento de contraseña los modifican.
+ */
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, HasRoles, Notifiable;
+
+    /**
+     * Valores por defecto de un usuario nuevo en memoria (la base de datos ya los pone al guardar,
+     * pero el modelo recién creado no los trae): sin esto is_active sería null y la cuenta pasaría
+     * por desactivada hasta recargarla.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = ['is_active' => true];
 
     /**
      * Get the attributes that should be cast.
@@ -29,6 +45,55 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
+            'invited_at' => 'datetime',
+            'invitation_accepted_at' => 'datetime',
         ];
+    }
+
+    /**
+     * ¿Se le invitó y aún no define su contraseña con el enlace?
+     */
+    public function hasPendingInvitation(): bool
+    {
+        return $this->invited_at !== null && $this->invitation_accepted_at === null;
+    }
+
+    /**
+     * Filtros del listado de usuarios: search (nombre o correo), role e is_active.
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    public function scopeFilter(Builder $query, array $filters): void
+    {
+        $query
+            ->when($filters['search'] ?? null, fn (Builder $query, string $search) => $query->where(
+                fn (Builder $query) => $query
+                    ->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+            ))
+            ->when($filters['role'] ?? null, fn (Builder $query, string $role) => $query->role($role))
+            ->when(
+                isset($filters['is_active']),
+                fn (Builder $query) => $query->where('is_active', (bool) $filters['is_active'])
+            );
+    }
+
+    /**
+     * Quienes tienen el rol admin y la cuenta activa.
+     */
+    public function scopeActiveAdmins(Builder $query): void
+    {
+        $query->role(RoleName::Admin->value)->where('is_active', true);
+    }
+
+    /**
+     * ¿Es la única persona administradora con la cuenta activa?
+     */
+    public function isLastActiveAdmin(): bool
+    {
+        return $this->is_active
+            && $this->hasRole(RoleName::Admin->value)
+            && ! static::activeAdmins()->whereKeyNot($this->getKey())->exists();
     }
 }

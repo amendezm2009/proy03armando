@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureUserIsActive;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -17,7 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->throttleApi();
         // Casi todas las páginas muestran contenido según la sesión (menú con nombre y correo): el
         // navegador no debe guardarlas, o el botón "atrás" las enseñaría tras cerrar la sesión.
-        $middleware->web(append: ['cache.headers:no_store;no_cache;must_revalidate;max_age=0']);
+        $middleware->web(append: [
+            'cache.headers:no_store;no_cache;must_revalidate;max_age=0',
+            EnsureUserIsActive::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $wantsJson = fn (Request $request): bool => $request->is('api/*') || $request->expectsJson();

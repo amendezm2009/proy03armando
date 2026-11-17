@@ -32,13 +32,24 @@ class LoginRequest extends FormRequest
     }
 
     /**
+     * Credenciales aceptadas: correo y contraseña de una cuenta activa. Una cuenta desactivada recibe
+     * el mismo mensaje que una contraseña incorrecta, para no revelar que existe.
+     *
+     * @return array<string, mixed>
+     */
+    private function credentials(): array
+    {
+        return [...$this->only('email', 'password'), 'is_active' => true];
+    }
+
+    /**
      * Inicia la sesión web.
      *
      * @throws ValidationException
      */
     public function authenticate(): void
     {
-        $this->attempt(fn (): bool => Auth::attempt($this->only('email', 'password'), $this->boolean('remember')));
+        $this->attempt(fn (): bool => Auth::attempt($this->credentials(), $this->boolean('remember')));
     }
 
     /**
@@ -48,7 +59,7 @@ class LoginRequest extends FormRequest
      */
     public function validatedUser(): User
     {
-        $this->attempt(fn (): bool => Auth::validate($this->only('email', 'password')));
+        $this->attempt(fn (): bool => Auth::validate($this->credentials()));
 
         return User::where('email', $this->string('email')->value())->firstOrFail();
     }

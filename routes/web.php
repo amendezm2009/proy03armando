@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\ClassificationController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\UserController;
 use App\Http\ResourceAuthorization;
 use App\PermissionName;
 use Illuminate\Support\Facades\Route;
@@ -44,4 +45,24 @@ Route::middleware('auth')->group(function () {
         Route::resource('classifications', ClassificationController::class)->except('show'),
         'classifications',
     );
+
+    // Usuarios: no se eliminan, se desactivan. El permiso del rol lo exige el middleware y la regla
+    // por registro (no a sí mismo, no a la última persona administradora) UserPolicy con ->can().
+    ResourceAuthorization::apply(
+        Route::resource('users', UserController::class)->except(['show', 'destroy']),
+        'users',
+        ['view', 'create', 'update'],
+    );
+    Route::patch('users/{user}/deactivate', [UserController::class, 'deactivate'])
+        ->middleware(ResourceAuthorization::needs(PermissionName::DeactivateUsers))
+        ->can('deactivate', 'user')
+        ->name('users.deactivate');
+    Route::patch('users/{user}/activate', [UserController::class, 'activate'])
+        ->middleware(ResourceAuthorization::needs(PermissionName::DeactivateUsers))
+        ->can('activate', 'user')
+        ->name('users.activate');
+    Route::post('users/{user}/invitation', [UserController::class, 'invite'])
+        ->middleware([ResourceAuthorization::needs(PermissionName::CreateUsers), 'throttle:invitation'])
+        ->can('invite', 'user')
+        ->name('users.invitation');
 });

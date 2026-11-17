@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Classification;
+use App\Models\User;
 use App\RoleName;
 use Laravel\Sanctum\Sanctum;
 
@@ -36,8 +37,8 @@ describe('cliente', function () {
     });
 });
 
-describe('invitado', function () {
-    beforeEach(fn () => Sanctum::actingAs(userWithRole(RoleName::Invitado)));
+describe('sin rol', function () {
+    beforeEach(fn () => Sanctum::actingAs(User::factory()->create()));
 
     it('recibe 403 al listar y al consultar', function () {
         $classification = Classification::factory()->create();

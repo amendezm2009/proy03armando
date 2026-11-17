@@ -24,4 +24,7 @@ return [
     'register' => (int) env('REGISTER_ATTEMPTS_PER_MINUTE', 5),
     'password' => (int) env('PASSWORD_ATTEMPTS_PER_MINUTE', 5),
 
+    // Reenvío de invitaciones a usuarios (gestión de usuarios), por IP.
+    'invitation' => (int) env('INVITATION_ATTEMPTS_PER_MINUTE', 5),
+
 ];

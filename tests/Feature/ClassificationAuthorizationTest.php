@@ -64,12 +64,6 @@ it('lanza un error al proteger un recurso que no tiene permisos definidos', func
 });
 
 describe('sin permiso de lectura', function () {
-    it('recibe 403 en el listado con el rol invitado', function () {
-        $this->actingAs(userWithRole(RoleName::Invitado))
-            ->get(route('classifications.index'))
-            ->assertForbidden();
-    });
-
     it('recibe 403 en el listado sin ningún rol', function () {
         $this->actingAs(User::factory()->create())
             ->get(route('classifications.index'))
@@ -77,7 +71,7 @@ describe('sin permiso de lectura', function () {
     });
 
     it('no ve el enlace de clasificaciones en el menú', function () {
-        $this->actingAs(userWithRole(RoleName::Invitado))
+        $this->actingAs(User::factory()->create())
             ->get(route('home'))
             ->assertOk()
             ->assertDontSee(route('classifications.index'));

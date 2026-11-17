@@ -129,16 +129,16 @@ flowchart TD
   - Pruebas: `tests/Feature/Auth/PasswordResetTest.php` y `tests/Feature/ProfileTest.php`.
 - [x] **Roles y Permisos con Spatie:**
   - `spatie/laravel-permission` instalado; migración de sus tablas y `config/permission.php` publicados; el modelo `User` usa `HasRoles`.
-  - Roles (`App\RoleName`): `admin`, `cliente`, `invitado`. Permisos (`App\PermissionName`): `classifications.view`, `.create`, `.update`, `.delete`. Qué permisos tiene cada rol se define en `RoleName::permissions()`.
-  - `RolesAndPermissionsSeeder` crea roles y permisos (se puede ejecutar varias veces); `DatabaseSeeder` da el rol `admin` a `test@example.com`. Quien se registra recibe el rol `cliente`.
+  - Roles (`App\RoleName`): `admin` y `cliente`. El "invitado" es el visitante sin cuenta, no un rol: no se puede asignar a una cuenta y una cuenta sin rol simplemente no tiene permisos. Permisos (`App\PermissionName`): `classifications.view`, `.create`, `.update`, `.delete`. Qué permisos tiene cada rol se define en `RoleName::permissions()`.
+  - `RolesAndPermissionsSeeder` crea roles y permisos y elimina los roles que ya no están en `RoleName` (quien los tuviera queda sin rol, es decir, sin permisos); se puede ejecutar varias veces; `DatabaseSeeder` da el rol `admin` a `test@example.com`. Quien se registra recibe el rol `cliente`.
   - La autorización se declara en las rutas con `App\Http\ResourceAuthorization`, tabla única para web y API: `apply()` protege cada acción de un recurso con el permiso `{recurso}.{habilidad}` y `needs()` protege una ruta suelta (exportar, importar). Controladores y Form Requests no repiten la comprobación. Las instrucciones de uso están en el PHPDoc de la clase; `php artisan route:list --path=classifications -v` muestra el permiso de cada ruta.
   - Las vistas muestran cada acción solo a quien tiene el permiso: `@can(App\PermissionName::CreateClassifications->value)`. Sin permiso, la ruta responde `403`.
   - Las reglas que dependan del registro (por ejemplo, "solo sus propios pedidos") se escribirán en una policy del recurso y se sumarán en la ruta con `->can()`.
   - Pruebas: `ClassificationAuthorizationTest.php` en `tests/Feature/` y `tests/Feature/Api/`; la función `userWithRole()` de `tests/Pest.php` crea usuarios con rol.
-- [ ] **Dashboards por Rol:**
+- [ ] **Dashboards por Rol** (la gestión de usuarios del administrador ya existe en `/users`):
   - `/admin/dashboard`: Gestión de usuarios, métricas de inventario y catálogos.
   - `/cliente/dashboard`: Catálogo de productos, carrito/pedidos y perfil.
-  - `/invitado/catalogo`: Vista pública de productos sin permisos de edición.
+  - `/invitado/catalogo`: Vista pública de productos para el visitante sin cuenta (sin rol ni permisos de edición).
 - [x] **Autenticación de la API con Laravel Sanctum (tokens):**
   - Sanctum ya estaba instalado (`php artisan install:api`: `routes/api.php` y migración `personal_access_tokens`); el modelo `User` usa `HasApiTokens`.
   - `POST /api/login` devuelve un token Bearer y los datos del usuario (`UserResource`); reutiliza `Auth\LoginRequest`, con el mismo bloqueo tras 5 intentos fallidos que la web. `POST /api/logout` revoca solo el token usado. `GET /api/user` devuelve el usuario del token.
@@ -167,6 +167,15 @@ flowchart TD
   - Al cambiar la contraseña, la contraseña actual se verifica con un máximo de 3 intentos por usuario (`PASSWORD_CONFIRMATION_MAX_ATTEMPTS`, `config/auth.php`). Cada fallo indica cuántos intentos quedan; al tercero se cierra la sesión, se registra en el log (usuario e IP, nunca la contraseña) y se redirige al login con un aviso.
   - El contador se reinicia al acertar, al iniciar sesión de nuevo o a los 900 segundos (`PASSWORD_CONFIRMATION_DECAY_SECONDS`). Con el contador agotado se cierra la sesión incluso con la contraseña correcta. Un fallo no cuenta si el resto del formulario es inválido.
   - La acción es reutilizable para las acciones sensibles de la gestión de usuarios (etapa 2); la rama API (revocar el token) se añadirá con esos endpoints. Pruebas: `tests/Feature/PasswordConfirmationTest.php`.
+- [x] **Gestión de usuarios, etapa 1 (web y API, solo administradores):**
+  - Web (`/users`) y API (`/api/users`): listado con filtros por texto, rol y estado y paginación, alta, edición de nombre, correo y rol, desactivar, reactivar y reenviar invitación. No hay eliminación: las cuentas se desactivan. Nueva migración con `users.is_active` y `users.avatar_path` (el avatar llega en la etapa 3).
+  - Permisos nuevos `users.view`, `users.create`, `users.update` y `users.deactivate` (`App\PermissionName`); solo `admin` los recibe. Las rutas los exigen con `ResourceAuthorization` (`apply()` ahora acepta una lista de habilidades) y las reglas por registro van en `App\Policies\UserPolicy` con `->can()`.
+  - **Alta por invitación:** el administrador no escribe contraseña; la cuenta se crea con una aleatoria y se envía `WelcomeNotification` con el enlace para que la persona defina la suya (mismo enlace y caducidad que "restablecer contraseña"). El correo explica qué hacer, cuándo caduca el enlace (un solo uso) y que nadie del equipo pedirá la contraseña; el enlace abre una pantalla de bienvenida "Define tu contraseña" (`?invitation=1`, solo cambia los textos y no consulta la cuenta). Si el enlace venció o ya se usó, el mensaje indica pedir uno nuevo.
+  - **Invitación pendiente / aceptada:** `users.invited_at` guarda cuándo se envió la última invitación e `users.invitation_accepted_at` cuándo la persona definió su contraseña (con el enlace de bienvenida o con «¿Olvidaste tu contraseña?»). El listado muestra "Invitación pendiente" y la API `invitation_pending`. "Reenviar invitación" (límite `INVITATION_ATTEMPTS_PER_MINUTE`) solo está disponible mientras la invitación sigue pendiente; genera un enlace nuevo e invalida el anterior. Las cuentas que se registraron solas nunca tienen invitación.
+  - **Al desactivar:** la persona no puede iniciar sesión (web ni API, con el mismo mensaje que una contraseña incorrecta), no recibe enlaces de recuperación, se revocan sus tokens, se invalida "recordarme" y se borran sus sesiones guardadas. `EnsureUserIsActive` cierra además cualquier sesión o token que siga vivo.
+  - **Protecciones:** nadie se desactiva ni cambia su propio rol; no se puede desactivar ni degradar a la última persona administradora activa; `name`, `email` y `role` son lo único que se acepta (`is_active`, `avatar_path` y la contraseña no se asignan en masa); el rol se aplica con `syncRoles`. Cada alta, cambio, desactivación, reactivación e invitación queda en el log con el id de quien la hizo.
+  - Acciones: `SaveUser`, `InviteUser` y `ChangeUserStatus` (compartidas por web y API). Pruebas: `tests/Feature/UserManagementTest.php` y `tests/Feature/Api/UserManagementTest.php`.
+  - Pendiente (etapas 2 y 3): modal de confirmación de contraseña con 3 intentos para las acciones sensibles, y avatar con iniciales.
 
 ---
 
@@ -274,9 +283,8 @@ Todas las peticiones llevan la cabecera `Accept: application/json`.
 |---|---|
 | `admin` | Ver, crear, editar, eliminar, importar y exportar. |
 | `cliente` | Ver y exportar. Es el rol de quien se registra. |
-| `invitado` | Sin acceso. |
 
-Un usuario sin rol tampoco tiene acceso. Importar requiere el permiso de crear; exportar, el de ver.
+El visitante sin cuenta ("invitado") no es un rol: solo ve las páginas públicas. Una cuenta sin rol puede iniciar sesión y ver su perfil, pero no tiene acceso a ningún módulo. Importar requiere el permiso de crear; exportar, el de ver.
 
 1. Crear las tablas de Spatie y los roles en una base de datos existente (no borra datos):
    ```bash
@@ -289,7 +297,7 @@ Un usuario sin rol tampoco tiene acceso. Importar requiere el permiso de crear; 
    ```bash
    php artisan tinker --execute 'App\Models\User::where("email", "test@example.com")->firstOrFail()->assignRole("admin");'
    ```
-3. Tras cambiar `RoleName::permissions()`, volver a ejecutar el seeder del paso 1.
+3. Tras cambiar `RoleName::permissions()` o quitar un rol de `RoleName`, volver a ejecutar el seeder del paso 1.
 
 Para añadir un permiso: nuevo caso en `App\PermissionName`, asignarlo en `RoleName::permissions()`, exigirlo en la ruta con `ResourceAuthorization::needs()` y ejecutar el seeder.
 
