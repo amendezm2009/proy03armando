@@ -15,6 +15,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->throttleApi();
+        // Casi todas las páginas muestran contenido según la sesión (menú con nombre y correo): el
+        // navegador no debe guardarlas, o el botón "atrás" las enseñaría tras cerrar la sesión.
+        $middleware->web(append: ['cache.headers:no_store;no_cache;must_revalidate;max_age=0']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $wantsJson = fn (Request $request): bool => $request->is('api/*') || $request->expectsJson();

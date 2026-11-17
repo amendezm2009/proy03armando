@@ -120,7 +120,7 @@ flowchart TD
   - Inicio de sesión (`/login`) con "recordarme" y bloqueo tras 5 intentos fallidos (`Auth\LoginRequest`), registro (`/register`, `Auth\RegisterRequest`) y cierre de sesión (`POST /logout`).
   - Rutas web de clasificaciones protegidas con el middleware `auth`; navbar según la sesión (`@auth` / `@guest`).
   - Destino único tras iniciar sesión o registrarse: la ruta `home` (o la página que el usuario había solicitado); ningún archivo de autenticación nombra un módulo.
-  - Las páginas protegidas se envían con `Cache-Control: no-store` para que no se vean con el botón "atrás" tras cerrar sesión.
+  - Todas las respuestas web (públicas y protegidas) se envían con `Cache-Control: no-store` (middleware en el grupo `web`, `bootstrap/app.php`), porque el menú muestra el nombre y el correo del usuario; así no se ven con el botón "atrás" tras cerrar la sesión. Como red de seguridad, `resources/js/app.js` recarga una página con sesión que el navegador restaure desde memoria (`data-authenticated` en el `<body>`). La API no lleva esta cabecera. Pruebas: `tests/Feature/CacheHeadersTest.php`.
   - Reglas de nombre, correo y contraseña centralizadas en el trait `Http\Requests\Concerns\UserValidationRules`.
   - Pruebas: `tests/Feature/Auth/LoginTest.php` y `tests/Feature/Auth/RegisterTest.php`.
 - [x] **Autenticación, parte B:**
@@ -155,6 +155,18 @@ flowchart TD
   - Se suma al bloqueo por correo + IP del login (5 fallos): este límite frena además a quien prueba correos distintos desde una misma IP.
   - Al superarlo: página `429` propia en la web (`resources/views/errors/429.blade.php`) y `429` en JSON en la API.
   - Pruebas: `tests/Feature/Auth/RateLimitTest.php`.
+- [x] **Cifrado de contraseñas con Argon2id:**
+  - `HASH_DRIVER=argon2id` (por defecto en `config/hashing.php`); parámetros `ARGON_MEMORY`, `ARGON_TIME` y `ARGON_THREADS` en `.env`.
+  - `HASH_VERIFY=false` deja entrar a quien aún tiene una contraseña bcrypt y la convierte a Argon2id en su siguiente inicio de sesión web (`rehash_on_login`). Quien solo usa la API conserva bcrypt hasta que inicie sesión en la web o cambie su contraseña.
+  - En pruebas se usan parámetros ligeros (`phpunit.xml`). Pruebas: `tests/Feature/Auth/HashingTest.php`.
+- [x] **Campo de contraseña reutilizable `<x-form.password>`:**
+  - Botón para mostrar u ocultar, accesible (`aria-pressed`), y valor nunca escrito en el HTML. Pide al navegador y a los gestores de contraseñas que no rellenen el campo (`autocomplete="new-password"` y atributos `data-*`); es una petición, no una garantía. Vacía el campo al volver con "atrás".
+  - Usado en inicio de sesión, registro, restablecer contraseña y cambio de contraseña del perfil. Pruebas: `tests/Feature/Views/PasswordInputTest.php`.
+  - El formulario de cambio de contraseña incluye un campo de usuario oculto con el correo de la cuenta, para que el gestor de contraseñas del navegador sepa qué cuenta actualizar y no muestre la lista de cuentas guardadas.
+- [x] **Confirmación de contraseña con límite de intentos (`App\Actions\ConfirmPassword`):**
+  - Al cambiar la contraseña, la contraseña actual se verifica con un máximo de 3 intentos por usuario (`PASSWORD_CONFIRMATION_MAX_ATTEMPTS`, `config/auth.php`). Cada fallo indica cuántos intentos quedan; al tercero se cierra la sesión, se registra en el log (usuario e IP, nunca la contraseña) y se redirige al login con un aviso.
+  - El contador se reinicia al acertar, al iniciar sesión de nuevo o a los 900 segundos (`PASSWORD_CONFIRMATION_DECAY_SECONDS`). Con el contador agotado se cierra la sesión incluso con la contraseña correcta. Un fallo no cuenta si el resto del formulario es inválido.
+  - La acción es reutilizable para las acciones sensibles de la gestión de usuarios (etapa 2); la rama API (revocar el token) se añadirá con esos endpoints. Pruebas: `tests/Feature/PasswordConfirmationTest.php`.
 
 ---
 
@@ -185,7 +197,7 @@ flowchart TD
 
 ### Fase 6: Auditoría de Seguridad OWASP Top 10 y Cierre
 - [ ] **A01: Broken Access Control:** Policies de Laravel para cada recurso y validación estricta de propiedad de datos.
-- [ ] **A02: Cryptographic Failures:** Contraseñas hasheadas (Bcrypt cost 12), variables sensibles ocultas en `.env`.
+- [ ] **A02: Cryptographic Failures:** Contraseñas hasheadas con Argon2id (`config/hashing.php`; las contraseñas bcrypt anteriores se convierten solas en el siguiente inicio de sesión web), variables sensibles ocultas en `.env`.
 - [ ] **A03: Injection:** Prepared statements con Eloquent, validaciones en FormRequests y escape estricto en Blade.
 - [ ] **A04: Insecure Design:** Rate limiting con `throttle` en autenticación y APIs para prevenir ataques de fuerza bruta.
 - [ ] **A05: Security Misconfiguration:** Cabeceras HTTP de seguridad (`X-Frame-Options`, `X-Content-Type-Options`, `CSP`, `Referrer-Policy`).

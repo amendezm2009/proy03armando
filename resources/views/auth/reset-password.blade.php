@@ -16,13 +16,13 @@
             </div>
 
             <div class="mb-3">
-                <x-form.input name="password" type="password" label="Contraseña nueva" required autofocus
-                    minlength="8" autocomplete="new-password" hint="Mínimo 8 caracteres." />
+                <x-form.password name="password" label="Contraseña nueva" required autofocus minlength="8"
+                    hint="Mínimo 8 caracteres." />
             </div>
 
             <div class="mb-3">
-                <x-form.input name="password_confirmation" type="password" label="Confirmar contraseña" required
-                    minlength="8" autocomplete="new-password" hint="Repite la contraseña." />
+                <x-form.password name="password_confirmation" label="Confirmar contraseña" required minlength="8"
+                    hint="Repite la contraseña." />
             </div>
 
             <button type="submit" class="btn btn-primary w-100">

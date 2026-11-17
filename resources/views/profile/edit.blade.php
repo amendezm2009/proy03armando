@@ -32,19 +32,24 @@
                 @csrf
                 @method('PUT')
 
+                {{-- Indica al gestor de contraseñas del navegador qué cuenta cambia de contraseña; sin este
+                     campo el navegador no puede saberlo y muestra una lista con todas las cuentas guardadas. --}}
+                <input type="text" name="username" value="{{ $user->email }}" autocomplete="username" readonly
+                    tabindex="-1" aria-hidden="true" class="visually-hidden">
+
                 <div class="mb-3">
-                    <x-form.input name="current_password" type="password" label="Contraseña actual" required
-                        autocomplete="current-password" hint="Ingresa tu contraseña actual." />
+                    <x-form.password name="current_password" label="Contraseña actual" required
+                        hint="Ingresa tu contraseña actual." />
                 </div>
 
                 <div class="mb-3">
-                    <x-form.input name="password" type="password" label="Contraseña nueva" required minlength="8"
-                        autocomplete="new-password" hint="Mínimo 8 caracteres." />
+                    <x-form.password name="password" label="Contraseña nueva" required minlength="8"
+                        hint="Mínimo 8 caracteres." />
                 </div>
 
                 <div class="mb-3">
-                    <x-form.input name="password_confirmation" type="password" label="Confirmar contraseña" required
-                        minlength="8" autocomplete="new-password" hint="Repite la contraseña." />
+                    <x-form.password name="password_confirmation" label="Confirmar contraseña" required
+                        minlength="8" hint="Repite la contraseña." />
                 </div>
 
                 <button type="submit" class="btn btn-primary">

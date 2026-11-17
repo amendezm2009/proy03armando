@@ -20,7 +20,8 @@ class PasswordUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'current_password' => ['required', 'current_password'],
+            // La contraseña actual se verifica, con límite de intentos, en App\Actions\ConfirmPassword.
+            'current_password' => ['required', 'string'],
             'password' => $this->passwordRules(),
         ];
     }

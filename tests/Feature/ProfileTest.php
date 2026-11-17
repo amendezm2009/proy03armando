@@ -24,6 +24,15 @@ describe('acceso', function () {
             ->assertSee('Ana Pérez')
             ->assertSee('ana@example.com');
     });
+
+    it('identifica la cuenta en el formulario de contraseña para que el navegador sepa cuál actualizar', function () {
+        $user = User::factory()->create(['email' => 'ana@example.com']);
+
+        $this->actingAs($user)
+            ->get(route('profile.edit'))
+            ->assertOk()
+            ->assertSee('name="username" value="ana@example.com" autocomplete="username"', false);
+    });
 });
 
 describe('datos del perfil', function () {

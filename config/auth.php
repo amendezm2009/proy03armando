@@ -114,4 +114,22 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Confirmación de la contraseña del usuario con sesión
+    |--------------------------------------------------------------------------
+    |
+    | Acciones sensibles (cambiar la contraseña, y más adelante las de
+    | administración de usuarios) piden la contraseña de quien ya inició sesión.
+    | Al llegar a "max_attempts" fallos se cierra su sesión. El contador se
+    | reinicia al acertar, al iniciar sesión de nuevo o pasados "decay_seconds".
+    | Lo aplica App\Actions\ConfirmPassword.
+    |
+    */
+
+    'confirmation' => [
+        'max_attempts' => (int) env('PASSWORD_CONFIRMATION_MAX_ATTEMPTS', 3),
+        'decay_seconds' => (int) env('PASSWORD_CONFIRMATION_DECAY_SECONDS', 900),
+    ],
+
 ];

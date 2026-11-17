@@ -23,7 +23,7 @@
     </style>
 </head>
 
-<body class="bg-light d-flex flex-column min-vh-100">
+<body class="bg-light d-flex flex-column min-vh-100" data-authenticated="{{ auth()->check() ? 'true' : 'false' }}">
     <!-- Navbar Principal -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm">
         <div class="container-fluid px-4">
