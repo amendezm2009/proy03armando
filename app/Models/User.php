@@ -51,6 +51,37 @@ class User extends Authenticatable
         ];
     }
 
+    public function hasAvatar(): bool
+    {
+        return $this->avatar_path !== null;
+    }
+
+    /**
+     * Dirección pública de la foto de perfil (la sirve AvatarFileController), o null si no tiene.
+     */
+    public function avatarUrl(): ?string
+    {
+        return $this->hasAvatar() ? route('avatars.show', basename($this->avatar_path)) : null;
+    }
+
+    /**
+     * Dos letras para el avatar cuando no hay foto: las iniciales de las dos primeras palabras del
+     * nombre o, si solo hay una, sus dos primeras letras. Ignora símbolos y signos.
+     */
+    public function initials(): string
+    {
+        $words = array_values(array_filter(
+            array_map(fn (string $word): string => preg_replace('/[^\p{L}\p{N}]/u', '', $word), preg_split('/\s+/u', trim($this->name ?? '')) ?: []),
+            fn (string $word): bool => $word !== '',
+        ));
+
+        $initials = count($words) >= 2
+            ? mb_substr($words[0], 0, 1).mb_substr($words[1], 0, 1)
+            : mb_substr($words[0] ?? '', 0, 2);
+
+        return mb_strtoupper($initials) ?: '?';
+    }
+
     /**
      * ¿Se le invitó y aún no define su contraseña con el enlace?
      */

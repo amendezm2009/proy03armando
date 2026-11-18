@@ -26,6 +26,10 @@ class RolesAndPermissionsSeeder extends Seeder
             Permission::findOrCreate($permission->value);
         }
 
+        // DatabaseSeeder usa WithoutModelEvents: sin eventos Spatie no renueva su caché al crear los
+        // permisos y syncPermissions no los encontraría en una base vacía (migrate:fresh --seed).
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
         foreach (RoleName::cases() as $role) {
             Role::findOrCreate($role->value)->syncPermissions($role->permissions());
         }

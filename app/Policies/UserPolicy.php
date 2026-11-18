@@ -27,6 +27,14 @@ class UserPolicy
     }
 
     /**
+     * Un administrador puede quitar la foto de otra persona que tenga una (la suya la quita desde su perfil).
+     */
+    public function removeAvatar(User $actor, User $target): bool
+    {
+        return $target->hasAvatar() && ! $actor->is($target);
+    }
+
+    /**
      * Solo se reenvía la invitación a otras cuentas activas que aún no definieron su contraseña.
      */
     public function invite(User $actor, User $target): bool

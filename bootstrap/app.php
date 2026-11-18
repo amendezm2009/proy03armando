@@ -1,11 +1,13 @@
 <?php
 
+use App\Http\Controllers\AvatarFileController;
 use App\Http\Middleware\EnsureUserIsActive;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -13,6 +15,13 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        then: function (): void {
+            // Fotos de perfil: ruta pública y SIN grupo de middleware (ni sesión, ni cookies, ni "no-store",
+            // ni límite de la API): es una imagen que el navegador debe poder guardar. Ver AvatarFileController.
+            Route::get('avatars/{filename}', AvatarFileController::class)
+                ->where('filename', '[A-Za-z0-9]{40}\.webp')
+                ->name('avatars.show');
+        },
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->throttleApi();

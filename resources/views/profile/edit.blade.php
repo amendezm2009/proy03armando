@@ -4,6 +4,8 @@
 
 @section('content')
     <x-auth.card title="Datos del perfil" icon="bi-person" width="col-md-8 col-lg-6">
+        <x-avatar-editor :user="$user" />
+
         <form method="POST" action="{{ route('profile.update') }}" class="needs-validation" novalidate>
             @csrf
             @method('PATCH')

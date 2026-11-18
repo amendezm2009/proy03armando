@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\ClassificationController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\ProfileController;
@@ -34,6 +35,16 @@ Route::middleware('auth')->group(function () {
     Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('profile/password', [PasswordController::class, 'update'])->name('profile.password.update');
+
+    // Foto de perfil: cada persona cambia la suya; un administrador solo puede quitar la de otra.
+    Route::post('profile/avatar', [AvatarController::class, 'update'])
+        ->middleware('throttle:avatar')->name('profile.avatar.update');
+    Route::delete('profile/avatar', [AvatarController::class, 'destroy'])
+        ->middleware('throttle:avatar')->name('profile.avatar.destroy');
+    Route::delete('users/{user}/avatar', [AvatarController::class, 'destroyFor'])
+        ->middleware([ResourceAuthorization::needs(PermissionName::UpdateUsers), 'throttle:avatar'])
+        ->can('removeAvatar', 'user')
+        ->name('users.avatar.destroy');
 
     Route::get('classifications/export/excel', [ClassificationController::class, 'export'])
         ->middleware(ResourceAuthorization::needs(PermissionName::ViewClassifications))

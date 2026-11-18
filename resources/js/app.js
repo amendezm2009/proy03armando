@@ -22,6 +22,11 @@ if (pdfMake && pdfFonts) {
     window.pdfMake = pdfMake;
 }
 
+// Editor de la foto de perfil (<x-avatar-editor>): se carga aparte, solo en las páginas que lo tienen
+if (document.querySelector('[data-avatar-editor]')) {
+    import('./avatar-editor');
+}
+
 // Campos de contraseña (<x-form.password>): botón para mostrar u ocultar el valor
 document.addEventListener('click', (event) => {
     const button = event.target.closest('[data-password-toggle]');

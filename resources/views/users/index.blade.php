@@ -72,7 +72,12 @@
                     <tbody>
                         @forelse ($users as $user)
                             <tr>
-                                <td>{{ $user->name }}</td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <x-avatar :user="$user" :size="36" />
+                                        <span>{{ $user->name }}</span>
+                                    </div>
+                                </td>
                                 <td class="text-muted">{{ $user->email }}</td>
                                 <td>
                                     @foreach ($user->getRoleNames() as $roleName)
@@ -98,6 +103,20 @@
                                             title="Editar">
                                             <i class="bi bi-pencil"></i>
                                         </a>
+                                    @endcan
+
+                                    @can(App\PermissionName::UpdateUsers->value)
+                                        @can('removeAvatar', $user)
+                                            <form method="POST" action="{{ route('users.avatar.destroy', $user) }}"
+                                                class="d-inline">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-outline-secondary btn-sm"
+                                                    title="Quitar su foto de perfil">
+                                                    <i class="bi bi-image-alt"></i>
+                                                </button>
+                                            </form>
+                                        @endcan
                                     @endcan
 
                                     @can(App\PermissionName::CreateUsers->value)

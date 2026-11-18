@@ -23,6 +23,7 @@ class UserResource extends JsonResource
             'roles' => $this->getRoleNames(),
             'is_active' => $this->is_active,
             'invitation_pending' => $this->hasPendingInvitation(),
+            'avatar_url' => $this->avatarUrl(),
         ];
     }
 }

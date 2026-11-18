@@ -68,7 +68,11 @@
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="userMenu"
                             role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-person-circle fs-5"></i>
+                            @auth
+                                <x-avatar :user="auth()->user()" :size="30" />
+                            @else
+                                <i class="bi bi-person-circle fs-5"></i>
+                            @endauth
                             <span>{{ auth()->user()?->name ?? 'Invitado' }}</span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="userMenu">

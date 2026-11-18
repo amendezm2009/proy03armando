@@ -3,7 +3,9 @@
 use App\Models\User;
 use App\PermissionName;
 use App\RoleName;
+use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
+use Illuminate\Database\Eloquent\Model;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -20,6 +22,20 @@ it('asigna al administrador todos los permisos y al cliente solo los suyos', fun
     expect(Role::findByName('admin')->permissions)->toHaveCount(count(PermissionName::cases()))
         ->and(Role::findByName('cliente')->permissions->pluck('name')->all())
         ->toBe([PermissionName::ViewClassifications->value]);
+});
+
+it('funciona en una base vacía aunque se ejecute sin eventos de modelo, como hace migrate --seed', function () {
+    Model::withoutEvents(fn () => $this->seed(RolesAndPermissionsSeeder::class));
+
+    expect(Role::findByName('admin')->permissions)->toHaveCount(count(PermissionName::cases()))
+        ->and(Role::findByName('cliente')->permissions)->toHaveCount(1);
+});
+
+it('el sembrado completo crea al administrador y al cliente con su rol', function () {
+    $this->seed(DatabaseSeeder::class);
+
+    expect(User::where('email', 'admin@example.com')->firstOrFail()->hasRole(RoleName::Admin->value))->toBeTrue()
+        ->and(User::where('email', 'client@example.com')->firstOrFail()->hasRole(RoleName::Cliente->value))->toBeTrue();
 });
 
 it('puede ejecutarse varias veces sin duplicar nada', function () {

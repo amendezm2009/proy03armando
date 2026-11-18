@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AvatarController;
 use App\Http\Controllers\Api\ClassificationController;
 use App\Http\Controllers\Api\TokenController;
 use App\Http\Controllers\Api\UserController;
@@ -13,6 +14,16 @@ Route::post('login', [TokenController::class, 'store'])->middleware('throttle:lo
 Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function () {
     Route::post('logout', [TokenController::class, 'destroy'])->name('api.logout');
     Route::get('user', [TokenController::class, 'show'])->name('api.user');
+
+    // Foto de perfil: cada persona cambia la suya; un administrador solo puede quitar la de otra.
+    Route::post('user/avatar', [AvatarController::class, 'update'])
+        ->middleware('throttle:avatar')->name('api.user.avatar.update');
+    Route::delete('user/avatar', [AvatarController::class, 'destroy'])
+        ->middleware('throttle:avatar')->name('api.user.avatar.destroy');
+    Route::delete('users/{user}/avatar', [AvatarController::class, 'destroyFor'])
+        ->middleware([ResourceAuthorization::needs(PermissionName::UpdateUsers), 'throttle:avatar'])
+        ->can('removeAvatar', 'user')
+        ->name('api.users.avatar.destroy');
 
     ResourceAuthorization::apply(
         Route::apiResource('classifications', ClassificationController::class)
