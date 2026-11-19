@@ -193,16 +193,21 @@ flowchart TD
 ---
 
 ### Fase 4: CRUD de Productos (Relación N:M, Multimedia y Códigos)
-- [ ] **Migraciones y Modelos:**
-  - Tabla `products` (`id`, `name`, `slug`, `description`, `photo_path`, `barcode`, `qr_code`, `stock`, `purchase_price`, `sale_price`, `is_active`, `created_at`, `updated_at`).
-  - Tabla pivote `classification_product` (`id`, `product_id`, `classification_id`, `created_at`, `updated_at`) con claves foráneas en cascada e índices compuestos.
-  - Relaciones Eloquent `belongsToMany` en `Product` y `Classification`.
-- [ ] **Carga Segura de Imágenes:**
-  - Validación de subida (MIME types reales: jpeg, png, webp; tamaño máx; almacenamiento seguro en `storage/app/public/products`).
-- [ ] **Generación de Códigos:**
-  - Generación de Código de Barras (EAN-13 o Code 128) y Código QR dinámico.
-- [ ] **DataTables de Productos:**
-  - Vista con listado de etiquetas tipo badges, foto en miniatura, búsqueda y paginación.
+- [x] **Etapa 1: Migraciones, modelos y CRUD** (web y API):
+  - Tabla `products`: `sku` único, `name`, `slug` único e inmutable (forma parte de la URL y del futuro QR), `description`, `barcode` EAN-13 único, `stock`, `min_stock`, `purchase_price` y `sale_price` (`decimal(10,2)`), `is_active`, `created_by`/`updated_by` y baja lógica (`deleted_at`). Con respecto a lo previsto originalmente: `photo_path` se sustituye por una tabla de multimedia (etapa 2) y no hay columna `qr_code`, porque el QR se genera al vuelo con la URL del producto.
+  - Pivote `classification_product` con claves foráneas en cascada, índice único `(product_id, classification_id)` y relaciones `belongsToMany` en `Product` y `Classification`.
+  - Permisos `products.view|create|update|delete` (el administrador los tiene todos; el cliente solo `products.view` y no ve el precio de compra). Rutas con `ResourceAuthorization::apply` (`/products`, `/api/products`), dirección por `slug`.
+  - `App\Actions\SaveProduct` crea y actualiza: SKU `PRD-000123` y EAN-13 interno (prefijo `2` + id + dígito de control, `App\Actions\GenerateBarcode`) si se dejan vacíos, slug único (también frente a productos eliminados) y autoría tomada de quien actúa, nunca de la petición. La regla `App\Rules\Ean13` valida los códigos indicados a mano.
+  - Listado con filtros en servidor: texto (nombre, SKU, código de barras o slug), clasificaciones (basta con tener alguna), estado, existencias (sin stock, stock bajo, suficiente) y rango de precio de venta; clasificaciones cargadas con `with()` (sin N+1). Precios formateados con `Number::currency` según `config/catalog.php` (`CATALOG_CURRENCY`, `CATALOG_CURRENCY_LOCALE`).
+  - Eliminar es lógico; el SKU, el código de barras y el slug de un producto eliminado no se reutilizan.
+  - Datos de ejemplo: `ProductSeeder` (10 productos, incluido en `DatabaseSeeder`). Pruebas: `ProductTest`, `Api/ProductTest`, `ProductBarcodeTest`.
+  - **Selector de clasificaciones con historial** (filtro del listado y formulario de producto): como pueden ser miles, no se cargan todas. `<x-classification-picker>` (Tom Select, `resources/js/classification-picker.js`, cargado solo en las páginas que lo usan) consulta `GET /classifications/lookup` (`throttle:lookup`, permiso `classifications.view`). La lista inicial se pide al **abrir la página** (para que el primer clic no espere) y al enfocarlo vacío se muestra sin filtrar: las **Recientes** del usuario (con ✕ para quitarlas) y debajo las **Sugeridas** (las 10 primeras por nombre; no se cuentan productos para no frenar la apertura con muchos registros); con 1 o 2 letras esa lista no cambia, y con **3 letras o más** busca en el servidor (máx. 20 **Resultados**). El formulario solo ofrece clasificaciones activas.
+  - Historial en la tabla `classification_users_searches` (`user_id`, `classification_id`, `last_used_at`, único por usuario y clasificación, cascada): **se anota en el momento de elegir** una clasificación en el selector (`POST /classifications/recent/{classification}`), no al filtrar ni al guardar; `RecordClassificationSearches` conserva las 10 más recientes por usuario. Las ya elegidas no se ofrecen en el desplegable, pero al quitar su etiqueta vuelven a aparecer como recientes. Relación `User::recentClassifications()`. La ✕ borra una reciente (`DELETE` a la misma ruta, `ClassificationRecentController`; solo la fila de quien lo pide). Pruebas: `ClassificationLookupTest`.
+- [ ] **Etapa 2: Multimedia (hasta 9 archivos por producto):**
+  - Fotos (jpeg, png, webp) y videos breves (mp4/webm, máx. **5 minutos** y **menos de 10 MB**), con portada obligatoriamente de tipo imagen, orden y miniaturas, en el disco privado servido por una ruta pública (sin `storage:link`).
+  - Pendiente de aprobar la dependencia que lee la duración de los videos (`james-heinrich/getid3`).
+- [ ] **Etapa 3: Códigos:** código de barras (SVG con `picqer/php-barcode-generator`) y QR de la URL del producto (SVG con `bacon/bacon-qr-code`), con descarga.
+- [ ] **Más adelante:** historial de movimientos de stock (`stock_movements`: producto, tipo, cantidad, saldo, motivo y usuario).
 
 ---
 

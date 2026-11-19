@@ -20,15 +20,15 @@ it('asigna al administrador todos los permisos y al cliente solo los suyos', fun
     $this->seed(RolesAndPermissionsSeeder::class);
 
     expect(Role::findByName('admin')->permissions)->toHaveCount(count(PermissionName::cases()))
-        ->and(Role::findByName('cliente')->permissions->pluck('name')->all())
-        ->toBe([PermissionName::ViewClassifications->value]);
+        ->and(Role::findByName('cliente')->permissions->pluck('name')->sort()->values()->all())
+        ->toBe([PermissionName::ViewClassifications->value, PermissionName::ViewProducts->value]);
 });
 
 it('funciona en una base vacía aunque se ejecute sin eventos de modelo, como hace migrate --seed', function () {
     Model::withoutEvents(fn () => $this->seed(RolesAndPermissionsSeeder::class));
 
     expect(Role::findByName('admin')->permissions)->toHaveCount(count(PermissionName::cases()))
-        ->and(Role::findByName('cliente')->permissions)->toHaveCount(1);
+        ->and(Role::findByName('cliente')->permissions)->toHaveCount(count(RoleName::Cliente->permissions()));
 });
 
 it('el sembrado completo crea al administrador y al cliente con su rol', function () {

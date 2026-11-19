@@ -27,6 +27,11 @@ if (document.querySelector('[data-avatar-editor]')) {
     import('./avatar-editor');
 }
 
+// Selector de clasificaciones (<x-classification-picker>): se carga aparte, solo en las páginas que lo tienen
+if (document.querySelector('[data-classification-picker]')) {
+    import('./classification-picker');
+}
+
 // Campos de contraseña (<x-form.password>): botón para mostrar u ocultar el valor
 document.addEventListener('click', (event) => {
     const button = event.target.closest('[data-password-toggle]');

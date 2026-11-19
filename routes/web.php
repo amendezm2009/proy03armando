@@ -6,7 +6,10 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\ClassificationController;
+use App\Http\Controllers\ClassificationLookupController;
+use App\Http\Controllers\ClassificationRecentController;
 use App\Http\Controllers\PasswordController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserController;
 use App\Http\ResourceAuthorization;
@@ -46,6 +49,16 @@ Route::middleware('auth')->group(function () {
         ->can('removeAvatar', 'user')
         ->name('users.avatar.destroy');
 
+    // Búsqueda para el selector de clasificaciones (<x-classification-picker>).
+    Route::get('classifications/lookup', ClassificationLookupController::class)
+        ->middleware([ResourceAuthorization::needs(PermissionName::ViewClassifications), 'throttle:lookup'])
+        ->name('classifications.lookup');
+    Route::post('classifications/recent/{classification}', [ClassificationRecentController::class, 'store'])
+        ->middleware([ResourceAuthorization::needs(PermissionName::ViewClassifications), 'throttle:lookup'])
+        ->name('classifications.recent.store');
+    Route::delete('classifications/recent/{classification}', [ClassificationRecentController::class, 'destroy'])
+        ->middleware([ResourceAuthorization::needs(PermissionName::ViewClassifications), 'throttle:lookup'])
+        ->name('classifications.recent.destroy');
     Route::get('classifications/export/excel', [ClassificationController::class, 'export'])
         ->middleware(ResourceAuthorization::needs(PermissionName::ViewClassifications))
         ->name('classifications.export');
@@ -55,6 +68,12 @@ Route::middleware('auth')->group(function () {
     ResourceAuthorization::apply(
         Route::resource('classifications', ClassificationController::class)->except('show'),
         'classifications',
+    );
+
+    // Productos: la baja es lógica (soft delete). La dirección usa el slug, que no cambia al renombrar.
+    ResourceAuthorization::apply(
+        Route::resource('products', ProductController::class),
+        'products',
     );
 
     // Usuarios: no se eliminan, se desactivan. El permiso del rol lo exige el middleware y la regla

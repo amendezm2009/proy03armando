@@ -30,4 +30,7 @@ return [
     // Reenvío de invitaciones a usuarios (gestión de usuarios), por IP.
     'invitation' => (int) env('INVITATION_ATTEMPTS_PER_MINUTE', 5),
 
+    // Búsqueda de clasificaciones del selector (se consulta mientras se escribe), por IP.
+    'lookup' => (int) env('LOOKUP_REQUESTS_PER_MINUTE', 120),
+
 ];

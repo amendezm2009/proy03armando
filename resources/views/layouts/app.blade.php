@@ -55,12 +55,14 @@
                                 </a>
                             </li>
                         @endcan
-                        <li class="nav-item">
-                            <a class="nav-link text-white-50" href="#" tabindex="-1" aria-disabled="true">
-                                <i class="bi bi-boxes me-1"></i> Productos <span
-                                    class="badge bg-secondary ms-1">Próx.</span>
-                            </a>
-                        </li>
+                        @can(App\PermissionName::ViewProducts->value)
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('products.*') ? 'active fw-semibold' : '' }}"
+                                    href="{{ route('products.index') }}">
+                                    <i class="bi bi-boxes me-1"></i> Productos
+                                </a>
+                            </li>
+                        @endcan
                     @endauth
                 </ul>
 

@@ -9,6 +9,11 @@ enum PermissionName: string
     case UpdateClassifications = 'classifications.update';
     case DeleteClassifications = 'classifications.delete';
 
+    case ViewProducts = 'products.view';
+    case CreateProducts = 'products.create';
+    case UpdateProducts = 'products.update';
+    case DeleteProducts = 'products.delete';
+
     case ViewUsers = 'users.view';
     case CreateUsers = 'users.create';
     case UpdateUsers = 'users.update';

@@ -28,6 +28,6 @@ class DatabaseSeeder extends Seeder
         ])->assignRole(RoleName::Cliente);
 
         $this->call(ClassificationSeeder::class);
-
+        $this->call(ProductSeeder::class);
     }
 }

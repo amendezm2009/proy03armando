@@ -48,6 +48,23 @@ expect()->extend('toBeOne', function () {
 */
 
 /**
+ * Datos válidos para crear un producto; los atributos indicados sustituyen a los de ejemplo.
+ *
+ * @param  array<string, mixed>  $overrides
+ * @return array<string, mixed>
+ */
+function productPayload(array $overrides = []): array
+{
+    return array_merge([
+        'name' => 'Lámpara solar',
+        'stock' => 10,
+        'min_stock' => 2,
+        'purchase_price' => '80.00',
+        'sale_price' => '149.90',
+    ], $overrides);
+}
+
+/**
  * Crea los roles y permisos y devuelve un usuario con el rol indicado.
  */
 function userWithRole(RoleName $role): User

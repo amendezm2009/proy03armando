@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -49,6 +50,17 @@ class User extends Authenticatable
             'invited_at' => 'datetime',
             'invitation_accepted_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Clasificaciones que la persona usó hace poco al filtrar o editar productos (las más recientes
+     * primero con orderByPivot('last_used_at', 'desc')). Las escribe App\Actions\RecordClassificationSearches.
+     *
+     * @return BelongsToMany<Classification, $this>
+     */
+    public function recentClassifications(): BelongsToMany
+    {
+        return $this->belongsToMany(Classification::class, 'classification_users_searches')->withPivot('last_used_at');
     }
 
     public function hasAvatar(): bool

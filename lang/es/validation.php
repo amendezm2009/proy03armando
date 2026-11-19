@@ -41,6 +41,8 @@ return [
     'doesnt_contain' => 'El campo :attribute no debe contener ninguno de los siguientes valores: :values.',
     'doesnt_end_with' => 'El campo :attribute no debe terminar con ninguno de los siguientes valores: :values.',
     'doesnt_start_with' => 'El campo :attribute no debe comenzar con ninguno de los siguientes valores: :values.',
+    'sale_price_above_purchase' => 'El precio de venta debe ser mayor que el precio de compra.',
+    'ean13' => 'El campo :attribute debe ser un código EAN-13 válido (13 dígitos con dígito de control correcto).',
     'email' => 'El campo :attribute debe ser un correo electrónico válido.',
     'encoding' => 'El campo :attribute debe estar codificado en :encoding.',
     'ends_with' => 'El campo :attribute debe terminar con uno de los siguientes valores: :values.',

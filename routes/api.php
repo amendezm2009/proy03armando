@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AvatarController;
 use App\Http\Controllers\Api\ClassificationController;
+use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\TokenController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Middleware\EnsureUserIsActive;
@@ -29,6 +30,11 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
         Route::apiResource('classifications', ClassificationController::class)
             ->names('api.classifications'),
         'classifications',
+    );
+
+    ResourceAuthorization::apply(
+        Route::apiResource('products', ProductController::class)->names('api.products'),
+        'products',
     );
 
     // Usuarios: no se eliminan, se desactivan (ver routes/web.php).
