@@ -3,8 +3,10 @@
 use App\Http\Controllers\Api\AvatarController;
 use App\Http\Controllers\Api\ClassificationController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\ProductMediaController;
 use App\Http\Controllers\Api\TokenController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\ProductCodeController;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\ResourceAuthorization;
 use App\PermissionName;
@@ -36,6 +38,26 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
         Route::apiResource('products', ProductController::class)->names('api.products'),
         'products',
     );
+
+    // Código de barras y QR del producto (SVG; "?download=1" lo descarga): exigen products.view.
+    Route::middleware(ResourceAuthorization::needs(PermissionName::ViewProducts))->group(function () {
+        Route::get('products/{product}/barcode.svg', [ProductCodeController::class, 'barcode'])->name('api.products.barcode');
+        Route::get('products/{product}/qr.svg', [ProductCodeController::class, 'qr'])->name('api.products.qr');
+    });
+
+    // Fotos y videos del producto: consultar exige products.view; el resto, products.update.
+    Route::get('products/{product}/media', [ProductMediaController::class, 'index'])
+        ->middleware(ResourceAuthorization::needs(PermissionName::ViewProducts))
+        ->name('api.products.media.index');
+    Route::middleware([ResourceAuthorization::needs(PermissionName::UpdateProducts), 'throttle:media'])
+        ->prefix('products/{product}/media')
+        ->name('api.products.media.')
+        ->group(function () {
+            Route::post('/', [ProductMediaController::class, 'store'])->name('store');
+            Route::put('order', [ProductMediaController::class, 'order'])->name('order');
+            Route::patch('{media}/cover', [ProductMediaController::class, 'cover'])->name('cover');
+            Route::delete('{media}', [ProductMediaController::class, 'destroy'])->name('destroy');
+        });
 
     // Usuarios: no se eliminan, se desactivan (ver routes/web.php).
     ResourceAuthorization::apply(

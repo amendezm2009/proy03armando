@@ -9,7 +9,9 @@ use App\Http\Controllers\ClassificationController;
 use App\Http\Controllers\ClassificationLookupController;
 use App\Http\Controllers\ClassificationRecentController;
 use App\Http\Controllers\PasswordController;
+use App\Http\Controllers\ProductCodeController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductMediaController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserController;
 use App\Http\ResourceAuthorization;
@@ -75,6 +77,23 @@ Route::middleware('auth')->group(function () {
         Route::resource('products', ProductController::class),
         'products',
     );
+
+    // Código de barras y QR del producto (SVG): verlos o descargarlos exige products.view.
+    Route::middleware(ResourceAuthorization::needs(PermissionName::ViewProducts))->group(function () {
+        Route::get('products/{product}/barcode.svg', [ProductCodeController::class, 'barcode'])->name('products.barcode');
+        Route::get('products/{product}/qr.svg', [ProductCodeController::class, 'qr'])->name('products.qr');
+    });
+
+    // Fotos y videos del producto (hasta 9): gestionarlos exige products.update; verlos, products.view (en la ficha).
+    Route::middleware([ResourceAuthorization::needs(PermissionName::UpdateProducts), 'throttle:media'])
+        ->prefix('products/{product}/media')
+        ->name('products.media.')
+        ->group(function () {
+            Route::post('/', [ProductMediaController::class, 'store'])->name('store');
+            Route::delete('{media}', [ProductMediaController::class, 'destroy'])->name('destroy');
+            Route::patch('{media}/cover', [ProductMediaController::class, 'cover'])->name('cover');
+            Route::patch('{media}/move', [ProductMediaController::class, 'move'])->name('move');
+        });
 
     // Usuarios: no se eliminan, se desactivan. El permiso del rol lo exige el middleware y la regla
     // por registro (no a sí mismo, no a la última persona administradora) UserPolicy con ->can().

@@ -20,7 +20,7 @@ class ProductController extends Controller
 
         return ProductResource::collection(
             Product::filter($filters)
-                ->with('classifications')
+                ->with(['classifications', 'cover'])
                 ->orderBy('name')
                 ->paginate($filters['per_page'] ?? 15)
                 ->withQueryString()
@@ -36,7 +36,7 @@ class ProductController extends Controller
 
     public function show(Product $product): ProductResource
     {
-        return new ProductResource($product->load('classifications'));
+        return new ProductResource($product->load(['classifications', 'cover', 'media']));
     }
 
     public function update(ProductRequest $request, Product $product, SaveProduct $save): ProductResource

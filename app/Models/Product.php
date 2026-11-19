@@ -2,13 +2,18 @@
 
 namespace App\Models;
 
+use App\Actions\AddProductMedia;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Number;
 
 class Product extends Model
@@ -59,6 +64,27 @@ class Product extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        // Eliminar un producto (baja lógica o definitiva) queda en el log con quien lo hizo.
+        static::deleted(fn (Product $product) => Log::info('product.deleted', [
+            'product_id' => $product->id,
+            'actor_id' => Auth::id(),
+            'permanent' => $product->isForceDeleting(),
+        ]));
+
+        // Al eliminarlo definitivamente la base borra las filas de multimedia (cascada), pero no los archivos:
+        // se borran aquí para no dejarlos huérfanos en el disco.
+        static::forceDeleting(function (Product $product): void {
+            $files = $product->media->flatMap(fn (ProductMedia $media): array => [$media->path, $media->thumbnail_path])
+                ->filter()
+                ->map(fn (string $name): string => AddProductMedia::DIRECTORY.'/'.$name)
+                ->all();
+
+            Storage::disk(AddProductMedia::DISK)->delete($files);
+        });
+    }
+
     public function getRouteKeyName(): string
     {
         return 'slug';
@@ -70,6 +96,26 @@ class Product extends Model
     public function classifications(): BelongsToMany
     {
         return $this->belongsToMany(Classification::class)->withTimestamps();
+    }
+
+    /**
+     * Fotos y videos, en el orden elegido.
+     *
+     * @return HasMany<ProductMedia, $this>
+     */
+    public function media(): HasMany
+    {
+        return $this->hasMany(ProductMedia::class)->orderBy('position')->orderBy('id')->chaperone();
+    }
+
+    /**
+     * Portada: una de sus fotos (cover_media_id lo fija App\Actions\SetProductCover, no la petición).
+     *
+     * @return BelongsTo<ProductMedia, $this>
+     */
+    public function cover(): BelongsTo
+    {
+        return $this->belongsTo(ProductMedia::class, 'cover_media_id');
     }
 
     /**

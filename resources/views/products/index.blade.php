@@ -96,11 +96,15 @@
                         @forelse ($products as $product)
                             <tr>
                                 <td>
-                                    {{-- Etapa 2: aquí irá la miniatura de la portada. --}}
-                                    <div class="bg-body-secondary text-secondary rounded d-flex align-items-center justify-content-center"
-                                        style="width: 48px; height: 48px" aria-hidden="true">
-                                        <i class="bi bi-image fs-5"></i>
-                                    </div>
+                                    @if ($product->cover?->thumbnailUrl())
+                                        <img src="{{ $product->cover->thumbnailUrl() }}" alt="" width="48" height="48"
+                                            class="rounded object-fit-cover" loading="lazy">
+                                    @else
+                                        <div class="bg-body-secondary text-secondary rounded d-flex align-items-center justify-content-center"
+                                            style="width: 48px; height: 48px" aria-hidden="true">
+                                            <i class="bi bi-image fs-5"></i>
+                                        </div>
+                                    @endif
                                 </td>
                                 <td>
                                     <a href="{{ route('products.show', $product) }}"

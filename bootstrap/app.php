@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AvatarFileController;
+use App\Http\Controllers\ProductMediaFileController;
 use App\Http\Middleware\EnsureUserIsActive;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
@@ -21,6 +22,11 @@ return Application::configure(basePath: dirname(__DIR__))
             Route::get('avatars/{filename}', AvatarFileController::class)
                 ->where('filename', '[A-Za-z0-9]{40}\.webp')
                 ->name('avatars.show');
+
+            // Fotos, miniaturas y videos de productos: igual que las fotos de perfil. Ver ProductMediaFileController.
+            Route::get('media/products/{filename}', ProductMediaFileController::class)
+                ->where('filename', '[A-Za-z0-9]{40}\.(webp|mp4|webm)')
+                ->name('products.media.file');
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {

@@ -19,7 +19,7 @@ class ProductController extends Controller
 
         return view('products.index', [
             'products' => Product::filter($filters)
-                ->with('classifications')
+                ->with(['classifications', 'cover'])
                 ->orderBy('name')
                 ->paginate($filters['per_page'] ?? 10)
                 ->withQueryString(),
@@ -44,7 +44,7 @@ class ProductController extends Controller
 
     public function show(Product $product): View
     {
-        return view('products.show', ['product' => $product->load(['classifications', 'creator', 'updater'])]);
+        return view('products.show', ['product' => $product->load(['classifications', 'creator', 'updater', 'media'])]);
     }
 
     public function edit(Product $product): View
