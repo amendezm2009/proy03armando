@@ -329,6 +329,34 @@ describe('baja', function () {
     });
 });
 
+describe('estado por defecto del listado', function () {
+    it('muestra al cliente solo los activos hasta que elija otro estado', function () {
+        Product::factory()->create(['name' => 'Activo visible']);
+        Product::factory()->inactive()->create(['name' => 'Inactivo oculto']);
+        $this->actingAs(userWithRole(RoleName::Cliente));
+
+        $this->get(route('products.index'))
+            ->assertOk()
+            ->assertSee('Activo visible')
+            ->assertDontSee('Inactivo oculto')
+            ->assertSee('value="1" selected', false);
+
+        $this->get(route('products.index', ['is_active' => 0]))
+            ->assertSee('Inactivo oculto')->assertDontSee('Activo visible');
+
+        $this->get(route('products.index', ['is_active' => '']))
+            ->assertSee('Inactivo oculto')->assertSee('Activo visible');
+    });
+
+    it('muestra al administrador todos los productos por defecto', function () {
+        Product::factory()->create(['name' => 'Activo visible']);
+        Product::factory()->inactive()->create(['name' => 'Inactivo también']);
+
+        $this->actingAs(userWithRole(RoleName::Admin))->get(route('products.index'))
+            ->assertSee('Activo visible')->assertSee('Inactivo también');
+    });
+});
+
 it('el seeder crea los productos de ejemplo una sola vez', function () {
     userWithRole(RoleName::Admin);
     $this->seed(ClassificationSeeder::class);

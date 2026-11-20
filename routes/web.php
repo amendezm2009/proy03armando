@@ -5,9 +5,11 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\AvatarController;
+use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\ClassificationController;
 use App\Http\Controllers\ClassificationLookupController;
 use App\Http\Controllers\ClassificationRecentController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\ProductCodeController;
 use App\Http\Controllers\ProductController;
@@ -21,6 +23,12 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 })->name('home');
+
+// Catálogo público para visitantes: sin sesión, solo productos activos y sin datos internos.
+Route::prefix('invitado/catalogo')->middleware('throttle:catalog')->name('catalog.')->group(function () {
+    Route::get('/', [CatalogController::class, 'index'])->name('index');
+    Route::get('{product}', [CatalogController::class, 'show'])->name('show');
+});
 
 Route::middleware('guest')->group(function () {
     Route::get('login', [LoginController::class, 'create'])->name('login');
@@ -36,6 +44,14 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::post('logout', [LoginController::class, 'destroy'])->name('logout');
+
+    // Paneles por rol: cada uno exige su permiso (User::homeRoute() lleva a cada persona al suyo).
+    Route::get('admin/dashboard', [DashboardController::class, 'admin'])
+        ->middleware(ResourceAuthorization::needs(PermissionName::ViewAdminDashboard))
+        ->name('admin.dashboard');
+    Route::get('cliente/dashboard', [DashboardController::class, 'client'])
+        ->middleware(ResourceAuthorization::needs(PermissionName::ViewClientDashboard))
+        ->name('client.dashboard');
 
     Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('profile', [ProfileController::class, 'update'])->name('profile.update');

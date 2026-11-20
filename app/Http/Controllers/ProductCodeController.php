@@ -30,7 +30,8 @@ class ProductCodeController extends Controller
     {
         // La dirección sale de APP_URL, no del dominio con que se hizo la petición: una etiqueta impresa desde
         // "localhost" o una IP interna no debe llevar esa dirección (ni un Host falsificado).
-        $url = rtrim((string) config('app.url'), '/').route('products.show', $product, false);
+        // Apunta a la ficha del catálogo público: quien escanea la etiqueta no necesita cuenta.
+        $url = rtrim((string) config('app.url'), '/').route('catalog.show', $product, false);
 
         return $this->svg($request, $render->handle($url), "{$product->sku}-qr");
     }

@@ -35,7 +35,7 @@ enum RoleName: string
             //     PermissionName::cases(),
             //     fn (PermissionName $permission) => $permission !== PermissionName::DeleteProducts,
             // ),
-            self::Cliente => [PermissionName::ViewClassifications, PermissionName::ViewProducts],
+            self::Cliente => [PermissionName::ViewClassifications, PermissionName::ViewProducts, PermissionName::ViewClientDashboard],
         };
     }
 }

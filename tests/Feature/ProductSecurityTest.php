@@ -182,8 +182,8 @@ describe('archivos y códigos públicos', function () {
 
         $svg = $this->get('http://evil.test/products/lampara/qr.svg')->assertOk()->getContent();
 
-        expect($svg)->toBe(app(RenderQrSvg::class)->handle('https://tienda.example/products/lampara'))
-            ->and($svg)->not->toBe(app(RenderQrSvg::class)->handle('http://evil.test/products/lampara'));
+        expect($svg)->toBe(app(RenderQrSvg::class)->handle('https://tienda.example/invitado/catalogo/lampara'))
+            ->and($svg)->not->toBe(app(RenderQrSvg::class)->handle('http://evil.test/invitado/catalogo/lampara'));
     });
 });
 

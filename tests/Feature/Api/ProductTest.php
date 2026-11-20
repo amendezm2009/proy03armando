@@ -45,7 +45,8 @@ describe('acceso', function () {
 
 describe('listado', function () {
     beforeEach(function () {
-        Sanctum::actingAs(userWithRole(RoleName::Cliente));
+        // Con el rol que edita productos: el cliente ve solo los activos por defecto (ver "estado por defecto").
+        Sanctum::actingAs(userWithRole(RoleName::Admin));
 
         $this->electronica = Classification::factory()->create();
         $this->hogar = Classification::factory()->create();
@@ -216,5 +217,28 @@ describe('escritura', function () {
         $this->deleteJson("/api/products/{$product->slug}")->assertNoContent();
 
         $this->assertSoftDeleted($product);
+    });
+});
+
+describe('estado por defecto', function () {
+    it('muestra al cliente solo los activos hasta que pida otro estado', function () {
+        Product::factory()->create(['name' => 'Activo visible']);
+        Product::factory()->inactive()->create(['name' => 'Inactivo oculto']);
+        Sanctum::actingAs(userWithRole(RoleName::Cliente));
+
+        $names = fn (string $query): array => collect($this->getJson("/api/products{$query}")->assertOk()->json('data'))
+            ->pluck('name')->sort()->values()->all();
+
+        expect($names(''))->toBe(['Activo visible'])
+            ->and($names('?is_active=0'))->toBe(['Inactivo oculto'])
+            ->and($names('?is_active='))->toBe(['Activo visible', 'Inactivo oculto']);
+    });
+
+    it('muestra al administrador todos por defecto', function () {
+        Product::factory()->create(['name' => 'Activo visible']);
+        Product::factory()->inactive()->create(['name' => 'Inactivo también']);
+        Sanctum::actingAs(userWithRole(RoleName::Admin));
+
+        $this->getJson('/api/products')->assertOk()->assertJsonCount(2, 'data');
     });
 });

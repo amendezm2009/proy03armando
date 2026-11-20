@@ -28,6 +28,6 @@ class RegisterController extends Controller
 
         $request->session()->regenerate();
 
-        return to_route('home')->with('success', 'Cuenta creada. ¡Bienvenido!');
+        return to_route($user->homeRoute())->with('success', 'Cuenta creada. ¡Bienvenido!');
     }
 }

@@ -16,7 +16,7 @@ class ProductController extends Controller
 {
     public function index(ProductIndexRequest $request): AnonymousResourceCollection
     {
-        $filters = $request->validated();
+        $filters = $request->filters();
 
         return ProductResource::collection(
             Product::filter($filters)

@@ -14,6 +14,10 @@ enum PermissionName: string
     case UpdateProducts = 'products.update';
     case DeleteProducts = 'products.delete';
 
+    // Cada panel exige su permiso: el administrador los tiene todos; el cliente, solo el suyo.
+    case ViewAdminDashboard = 'dashboard.admin';
+    case ViewClientDashboard = 'dashboard.client';
+
     case ViewUsers = 'users.view';
     case CreateUsers = 'users.create';
     case UpdateUsers = 'users.update';

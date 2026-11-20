@@ -19,6 +19,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Tamaño de página
+    |--------------------------------------------------------------------------
+    |
+    | Opciones del selector "Mostrar" en las listas de los paneles y en el catálogo público, y el valor con que
+    | empiezan: 5 en cada lista de los paneles y 10 en el catálogo (dos filas de cinco productos).
+    |
+    */
+
+    'page_sizes' => [5, 10, 20, 50],
+
+    'dashboard_page_size' => 5,
+
+    'catalog_page_size' => 10,
+
+    /*
+    |--------------------------------------------------------------------------
     | Multimedia de los productos
     |--------------------------------------------------------------------------
     |

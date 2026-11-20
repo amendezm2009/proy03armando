@@ -21,7 +21,7 @@ it('asigna al administrador todos los permisos y al cliente solo los suyos', fun
 
     expect(Role::findByName('admin')->permissions)->toHaveCount(count(PermissionName::cases()))
         ->and(Role::findByName('cliente')->permissions->pluck('name')->sort()->values()->all())
-        ->toBe([PermissionName::ViewClassifications->value, PermissionName::ViewProducts->value]);
+        ->toBe([PermissionName::ViewClassifications->value, PermissionName::ViewClientDashboard->value, PermissionName::ViewProducts->value]);
 });
 
 it('funciona en una base vacía aunque se ejecute sin eventos de modelo, como hace migrate --seed', function () {

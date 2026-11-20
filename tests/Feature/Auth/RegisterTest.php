@@ -30,7 +30,7 @@ it('muestra el formulario de registro', function () {
 
 it('registra al usuario e inicia su sesión', function () {
     $this->post(route('register.store'), datosDeRegistro())
-        ->assertRedirect(route('home'));
+        ->assertRedirect(route('client.dashboard'));
 
     $user = User::where('email', 'ana@example.com')->firstOrFail();
 

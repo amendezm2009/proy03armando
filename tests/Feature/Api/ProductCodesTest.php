@@ -38,7 +38,7 @@ it('entrega el QR de la ficha del producto', function () {
         ->assertHeader('Content-Type', 'image/svg+xml; charset=utf-8');
 
     expect($this->get("/api/products/{$product->slug}/qr.svg")->getContent())
-        ->toBe(app(RenderQrSvg::class)->handle(route('products.show', $product)));
+        ->toBe(app(RenderQrSvg::class)->handle(route('catalog.show', $product)));
 });
 
 it('responde 404 en JSON si no hay código de barras o el producto fue eliminado', function () {

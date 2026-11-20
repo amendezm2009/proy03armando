@@ -59,7 +59,7 @@ describe('código de barras', function () {
 });
 
 describe('código QR', function () {
-    it('codifica la dirección de la ficha del producto', function () {
+    it('codifica la dirección de la ficha del catálogo público', function () {
         $product = Product::factory()->create();
         $other = Product::factory()->create();
         $this->actingAs(userWithRole(RoleName::Cliente));
@@ -69,8 +69,8 @@ describe('código QR', function () {
         expect($response->headers->get('Content-Type'))->toBe('image/svg+xml; charset=utf-8')
             ->and($response->headers->get('X-Content-Type-Options'))->toBe('nosniff')
             ->and(isValidXml($response->getContent()))->toBeTrue()
-            ->and($response->getContent())->toBe(app(RenderQrSvg::class)->handle(route('products.show', $product)))
-            ->and($response->getContent())->not->toBe(app(RenderQrSvg::class)->handle(route('products.show', $other)));
+            ->and($response->getContent())->toBe(app(RenderQrSvg::class)->handle(route('catalog.show', $product)))
+            ->and($response->getContent())->not->toBe(app(RenderQrSvg::class)->handle(route('catalog.show', $other)));
     });
 
     it('funciona aunque el producto no tenga código de barras y se puede descargar', function () {

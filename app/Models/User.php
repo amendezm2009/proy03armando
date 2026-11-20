@@ -63,6 +63,19 @@ class User extends Authenticatable
         return $this->belongsToMany(Classification::class, 'classification_users_searches')->withPivot('last_used_at');
     }
 
+    /**
+     * Nombre de la ruta de su panel según el rol: el administrador va a admin.dashboard, el cliente a
+     * client.dashboard y quien no tiene rol se queda en la página de inicio.
+     */
+    public function homeRoute(): string
+    {
+        return match (true) {
+            $this->hasRole(RoleName::Admin->value) => 'admin.dashboard',
+            $this->hasRole(RoleName::Cliente->value) => 'client.dashboard',
+            default => 'home',
+        };
+    }
+
     public function hasAvatar(): bool
     {
         return $this->avatar_path !== null;

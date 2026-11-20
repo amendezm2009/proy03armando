@@ -33,6 +33,9 @@ return [
     // Subir, ordenar o quitar fotos y videos de un producto (web y API), por IP.
     'media' => (int) env('MEDIA_ATTEMPTS_PER_MINUTE', 20),
 
+    // Catálogo público para visitantes (listado y fichas), por IP.
+    'catalog' => (int) env('CATALOG_REQUESTS_PER_MINUTE', 120),
+
     // Búsqueda de clasificaciones del selector (se consulta mientras se escribe), por IP.
     'lookup' => (int) env('LOOKUP_REQUESTS_PER_MINUTE', 120),
 

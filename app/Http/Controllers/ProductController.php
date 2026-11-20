@@ -15,7 +15,7 @@ class ProductController extends Controller
 {
     public function index(ProductIndexRequest $request): View
     {
-        $filters = $request->validated();
+        $filters = $request->filters();
 
         return view('products.index', [
             'products' => Product::filter($filters)
