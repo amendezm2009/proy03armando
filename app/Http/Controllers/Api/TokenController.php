@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\RecordSecurityEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Resources\UserResource;
@@ -13,6 +14,8 @@ class TokenController extends Controller
     public function store(LoginRequest $request): UserResource
     {
         $user = $request->validatedUser();
+
+        app(RecordSecurityEvent::class)->handle('auth.token_issued', ['user_id' => $user->id], $request);
 
         return (new UserResource($user))->additional([
             'token' => $user->createToken('api')->plainTextToken,
@@ -29,6 +32,8 @@ class TokenController extends Controller
     public function destroy(Request $request): Response
     {
         $request->user()->currentAccessToken()->delete();
+
+        app(RecordSecurityEvent::class)->handle('auth.token_revoked', request: $request);
 
         return response()->noContent();
     }

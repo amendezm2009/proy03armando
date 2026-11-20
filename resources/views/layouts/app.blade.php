@@ -69,6 +69,14 @@
                                 </a>
                             </li>
                         @endcan
+                        @can(App\PermissionName::ViewSecurityReport->value)
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('security.*') ? 'active fw-semibold' : '' }}"
+                                    href="{{ route('security.report') }}">
+                                    <i class="bi bi-shield-lock me-1"></i> Seguridad
+                                </a>
+                            </li>
+                        @endcan
                         @can(App\PermissionName::ViewProducts->value)
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('products.*') ? 'active fw-semibold' : '' }}"

@@ -123,11 +123,7 @@ class User extends Authenticatable
     public function scopeFilter(Builder $query, array $filters): void
     {
         $query
-            ->when($filters['search'] ?? null, fn (Builder $query, string $search) => $query->where(
-                fn (Builder $query) => $query
-                    ->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
-            ))
+            ->when($filters['search'] ?? null, fn (Builder $query, string $search) => $query->whereContainsText(['name', 'email'], $search))
             ->when($filters['role'] ?? null, fn (Builder $query, string $role) => $query->role($role))
             ->when(
                 isset($filters['is_active']),

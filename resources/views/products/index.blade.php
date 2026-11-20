@@ -182,7 +182,7 @@
 @endsection
 
 @push('scripts')
-    <script>
+    <script nonce="{{ Vite::cspNonce() }}">
         document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('.js-delete-form').forEach(function(form) {
                 form.addEventListener('submit', function(event) {

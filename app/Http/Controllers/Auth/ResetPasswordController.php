@@ -44,6 +44,9 @@ class ResetPasswordController extends Controller
                 'invitation_accepted_at' => $acceptedInvitation ? now() : $user->invitation_accepted_at,
             ])->save();
 
+            // Quien recupera la contraseña pudo haberla perdido por un robo: los tokens de la API anteriores se revocan.
+            $user->tokens()->delete();
+
             if ($acceptedInvitation) {
                 Log::info('Invitación aceptada.', ['user_id' => $user->id]);
             }

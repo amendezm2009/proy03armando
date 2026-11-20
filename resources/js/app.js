@@ -32,6 +32,16 @@ if (document.querySelector('[data-classification-picker]')) {
     import('./classification-picker');
 }
 
+// Selectores que navegan al elegir una opción (<x-per-page-select>): se usa un atributo y no "onchange" en
+// línea, que la política de seguridad de contenido (CSP) bloquea.
+document.addEventListener('change', (event) => {
+    const select = event.target.closest?.('select[data-navigate]');
+
+    if (select && select.value) {
+        window.location.href = select.value;
+    }
+});
+
 // Campos de contraseña (<x-form.password>): botón para mostrar u ocultar el valor
 document.addEventListener('click', (event) => {
     const button = event.target.closest('[data-password-toggle]');

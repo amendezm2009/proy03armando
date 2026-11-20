@@ -102,7 +102,7 @@
 </div>
 
 @push('scripts')
-    <script>
+    <script nonce="{{ Vite::cspNonce() }}">
         // Avisa antes de enviar si el precio de venta no es mayor que el de compra (el servidor lo vuelve a validar).
         document.addEventListener('DOMContentLoaded', function() {
             const purchase = document.getElementById('purchase_price');

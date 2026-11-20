@@ -170,7 +170,7 @@
 @endsection
 
 @push('scripts')
-    <script>
+    <script nonce="{{ Vite::cspNonce() }}">
         document.addEventListener('DOMContentLoaded', function() {
             @if ($errors->has('file') && auth()->user()->can(App\PermissionName::CreateClassifications->value))
                 bootstrap.Modal.getOrCreateInstance('#importModal').show();

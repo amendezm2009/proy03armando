@@ -15,6 +15,7 @@ use App\Http\Controllers\ProductCodeController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductMediaController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SecurityReportController;
 use App\Http\Controllers\UserController;
 use App\Http\ResourceAuthorization;
 use App\PermissionName;
@@ -49,6 +50,14 @@ Route::middleware('auth')->group(function () {
     Route::get('admin/dashboard', [DashboardController::class, 'admin'])
         ->middleware(ResourceAuthorization::needs(PermissionName::ViewAdminDashboard))
         ->name('admin.dashboard');
+    // Informe de seguridad (solo lectura): pide la contraseña en cada visita y el resultado se muestra en la
+    // respuesta del POST (no se guarda en la sesión). Ver SecurityReportController.
+    Route::get('admin/seguridad', [SecurityReportController::class, 'create'])
+        ->middleware(ResourceAuthorization::needs(PermissionName::ViewSecurityReport))
+        ->name('security.report');
+    Route::post('admin/seguridad', [SecurityReportController::class, 'store'])
+        ->middleware([ResourceAuthorization::needs(PermissionName::ViewSecurityReport), 'throttle:password'])
+        ->name('security.report.show');
     Route::get('cliente/dashboard', [DashboardController::class, 'client'])
         ->middleware(ResourceAuthorization::needs(PermissionName::ViewClientDashboard))
         ->name('client.dashboard');

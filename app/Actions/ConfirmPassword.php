@@ -7,7 +7,6 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -92,10 +91,9 @@ class ConfirmPassword
      */
     private function lockOut(Request $request, Authenticatable $user): never
     {
-        Log::warning('Acceso cerrado por demasiados intentos de confirmar la contraseña.', [
+        app(RecordSecurityEvent::class)->handle('auth.password_confirm_lockout', [
             'user_id' => $user->getAuthIdentifier(),
-            'ip' => $request->ip(),
-        ]);
+        ], $request);
 
         if ($request->is('api/*') || $request->expectsJson()) {
             $token = $user->currentAccessToken();

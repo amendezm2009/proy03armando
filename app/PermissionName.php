@@ -22,4 +22,7 @@ enum PermissionName: string
     case CreateUsers = 'users.create';
     case UpdateUsers = 'users.update';
     case DeactivateUsers = 'users.deactivate';
+
+    // Informe de seguridad de la configuración (/admin/seguridad): solo el administrador.
+    case ViewSecurityReport = 'security.view';
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Actions\RecordSecurityEvent;
 use App\Models\User;
 use Closure;
 use Illuminate\Auth\Events\Lockout;
@@ -76,6 +77,10 @@ class LoginRequest extends FormRequest
         if (! $credentialsAreValid()) {
             RateLimiter::hit($this->throttleKey());
 
+            app(RecordSecurityEvent::class)->handle('auth.login_failed', [
+                'email_hash' => RecordSecurityEvent::fingerprint($this->string('email')->value()),
+            ], $this);
+
             throw ValidationException::withMessages([
                 'email' => __('auth.failed'),
             ]);
@@ -94,6 +99,10 @@ class LoginRequest extends FormRequest
         }
 
         event(new Lockout($this));
+
+        app(RecordSecurityEvent::class)->handle('auth.lockout', [
+            'email_hash' => RecordSecurityEvent::fingerprint($this->string('email')->value()),
+        ], $this);
 
         $seconds = RateLimiter::availableIn($this->throttleKey());
 

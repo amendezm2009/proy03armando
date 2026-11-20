@@ -166,13 +166,7 @@ class Product extends Model
     public function scopeFilter(Builder $query, array $filters): void
     {
         $query
-            ->when($filters['search'] ?? null, fn (Builder $query, string $search) => $query->where(
-                fn (Builder $query) => $query
-                    ->where('name', 'like', "%{$search}%")
-                    ->orWhere('sku', 'like', "%{$search}%")
-                    ->orWhere('barcode', 'like', "%{$search}%")
-                    ->orWhere('slug', 'like', "%{$search}%")
-            ))
+            ->when($filters['search'] ?? null, fn (Builder $query, string $search) => $query->whereContainsText(['name', 'sku', 'barcode', 'slug'], $search))
             ->when($filters['classifications'] ?? null, fn (Builder $query, array $ids) => $query->whereHas(
                 'classifications',
                 fn (Builder $query) => $query->whereIn('classifications.id', $ids)

@@ -147,7 +147,7 @@
     </div>
 
 @push('scripts')
-    <script>
+    <script nonce="{{ Vite::cspNonce() }}">
         document.addEventListener('DOMContentLoaded', function() {
             const modalElement = document.getElementById('mediaModal');
             const body = document.getElementById('mediaModalBody');

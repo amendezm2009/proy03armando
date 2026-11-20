@@ -12,8 +12,8 @@
 
 <label class="d-inline-flex align-items-center gap-2 small text-muted mb-0 text-nowrap">
     <span>Mostrar</span>
-    <select class="form-select form-select-sm w-auto" aria-label="Elementos por página"
-        onchange="window.location.href = this.value">
+    {{-- data-navigate: resources/js/app.js navega a la dirección de la opción elegida (sin onchange en línea, que la CSP bloquea). --}}
+    <select class="form-select form-select-sm w-auto" aria-label="Elementos por página" data-navigate>
         @foreach (config('catalog.page_sizes') as $size)
             <option value="{{ request()->fullUrlWithQuery([$name => $size, $paginator->getPageName() => null]) }}{{ $anchor ? '#'.$anchor : '' }}"
                 @selected($paginator->perPage() === $size)>{{ $size }}</option>

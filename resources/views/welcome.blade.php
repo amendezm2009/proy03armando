@@ -52,15 +52,3 @@
         </div>
     </div>
 @endsection
-
-@push('scripts')
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            if (typeof window.jQuery !== 'undefined') {
-                console.log('jQuery disponible');
-            } else {
-                console.error('jQuery no está disponible en window.$');
-            }
-        });
-    </script>
-@endpush

@@ -38,11 +38,7 @@ class Classification extends Model
     public function scopeFilter(Builder $query, array $filters): void
     {
         $query
-            ->when($filters['search'] ?? null, fn (Builder $query, string $search) => $query->where(
-                fn (Builder $query) => $query
-                    ->where('name', 'like', "%{$search}%")
-                    ->orWhere('slug', 'like', "%{$search}%")
-            ))
+            ->when($filters['search'] ?? null, fn (Builder $query, string $search) => $query->whereContainsText(['name', 'slug'], $search))
             ->when(
                 isset($filters['is_active']),
                 fn (Builder $query) => $query->where('is_active', (bool) $filters['is_active'])

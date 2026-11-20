@@ -9,3 +9,7 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('sanctum:prune-expired --hours=24')->daily();
+
+// Revisión diaria de la configuración de seguridad: el resultado queda en el registro de seguridad
+// (storage/logs/security-*.log, evento "security.check"; es "warning" si hay alguna falla grave).
+Schedule::command('security:check --log')->dailyAt('06:00');

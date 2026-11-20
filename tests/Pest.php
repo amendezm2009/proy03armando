@@ -6,6 +6,8 @@ use App\RoleName;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
+use Monolog\Handler\TestHandler;
 use Tests\TestCase;
 
 /*
@@ -21,6 +23,11 @@ use Tests\TestCase;
 
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
+    ->beforeEach(function () {
+        // El registro de seguridad se guarda en memoria: las pruebas no escriben archivos y pueden leerlo (securityLog()).
+        config(['logging.channels.security' => ['driver' => 'monolog', 'handler' => TestHandler::class]]);
+        Log::forgetChannel('security');
+    })
     ->in('Feature');
 
 /*
@@ -48,6 +55,24 @@ expect()->extend('toBeOne', function () {
 | global functions to help you to reduce the number of lines of code in your test files.
 |
 */
+
+/**
+ * Eventos anotados en el canal "security" durante la prueba, en orden: cada uno con "message" (nombre del
+ * evento), "level" (INFO o WARNING) y "context".
+ *
+ * @return list<array{message: string, level: string, context: array<string, mixed>}>
+ */
+function securityLog(): array
+{
+    /** @var TestHandler $handler */
+    $handler = Log::channel('security')->getLogger()->getHandlers()[0];
+
+    return array_map(fn ($record): array => [
+        'message' => $record->message,
+        'level' => $record->level->getName(),
+        'context' => $record->context,
+    ], $handler->getRecords());
+}
 
 /**
  * Datos válidos para crear un producto; los atributos indicados sustituyen a los de ejemplo.
