@@ -12,7 +12,7 @@ Proyecto desarrollado con **Laravel 13**, **MySQL**, **Bootstrap 5**, **jQuery**
 - **Compilador de Assets:** Vite
 - **Seguridad y Permisos:** Laravel Sanctum (APIs) + Spatie Laravel-Permission (Roles y Permisos RBAC)
 - **Autenticación UI:** vistas Blade propias con Bootstrap 5
-- **Exportaciones:** Laravel Excel (`maatwebsite/excel`) para exportar e importar clasificaciones. Los reportes en PDF y Excel de productos quedaron **descartados**.
+- **Exportaciones:** Laravel Excel (`maatwebsite/excel`) para exportar e importar clasificaciones.
 - **Testing:** Pest PHP
 
 ---
