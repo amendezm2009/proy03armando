@@ -27,6 +27,7 @@ use RuntimeException;
     {--key= : Archivo con la clave privada (por omisión, RELEASE_SIGNING_KEY_FILE)}
     {--previous= : Versión que reemplaza}
     {--commit= : Commit de git del que sale}
+    {--build=1 : Número de build: 1 la primera vez que se genera la versión y +1 en cada regeneración}
     {--part-mb= : Tamaño máximo de cada parte, en MiB (por omisión, RELEASE_PART_SIZE_MB)}')]
 #[Description('Empaqueta, parte en trozos y firma una versión de la aplicación')]
 class ReleasePackage extends Command
@@ -62,6 +63,7 @@ class ReleasePackage extends Command
                 partSize: max(1, $partMb) * 1024 * 1024,
                 previousVersion: $this->option('previous') ?: null,
                 commit: $this->option('commit') ?: null,
+                build: (int) $this->option('build'),
             );
         } catch (InvalidArgumentException|RuntimeException $exception) {
             $this->components->error($exception->getMessage());
@@ -72,7 +74,7 @@ class ReleasePackage extends Command
         $releaseDir = rtrim($output, '/\\').DIRECTORY_SEPARATOR."v{$version}";
 
         try {
-            $verify->handle($releaseDir, config('release.public_key'));
+            $verify->handle($releaseDir, VerifyReleasePackage::trustedKeys());
         } catch (RuntimeException $exception) {
             File::deleteDirectory($releaseDir);
             $this->components->error('El paquete recién creado no pasa la verificación y se borró: '.$exception->getMessage());
@@ -81,6 +83,7 @@ class ReleasePackage extends Command
         }
 
         $this->components->info("Versión {$version} empaquetada y verificada: {$releaseDir}");
+        $this->components->twoColumnDetail('Build', (string) $manifest['build']);
         $this->components->twoColumnDetail('Archivos', (string) $manifest['package']['files']);
         $this->components->twoColumnDetail('Partes', (string) count($manifest['parts']));
         $this->components->twoColumnDetail('Tamaño del ZIP', number_format($manifest['package']['size'] / 1048576, 1).' MiB');

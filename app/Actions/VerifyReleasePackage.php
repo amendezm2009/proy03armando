@@ -17,7 +17,7 @@ use ZipArchive;
  * Lo usan php artisan release:verify y release:package (al terminar) y lo usará el actualizador del servidor
  * antes de extraer nada.
  *
- * USO: $manifest = app(VerifyReleasePackage::class)->handle(base_path('releases/v1.2.0'), config('release.public_key'));
+ * USO: $manifest = app(VerifyReleasePackage::class)->handle(base_path('releases/v1.2.0'), VerifyReleasePackage::trustedKeys());
  *
  * @throws RuntimeException Con el motivo en español si algo no cuadra.
  */
@@ -26,11 +26,13 @@ class VerifyReleasePackage
     private const CHUNK = 1048576;
 
     /**
-     * @return array<string, mixed> El manifiesto ya verificado.
+     * @param  string|list<string|null>|null  $publicKeys  Una clave pública (Base64) o la lista de claves de confianza;
+     *                                                     basta con que una verifique la firma (ver trustedKeys()).
+     * @return array<string, mixed> El manifiesto ya verificado, más "verified_with": huella de la clave que verificó la firma.
      */
-    public function handle(string $directory, ?string $publicKey, bool $deep = true): array
+    public function handle(string $directory, string|array|null $publicKeys, bool $deep = true): array
     {
-        $manifest = $this->verifiedManifest($directory, $publicKey);
+        $manifest = $this->verifiedManifest($directory, is_array($publicKeys) ? $publicKeys : [$publicKeys]);
         $assembled = $deep ? tempnam(sys_get_temp_dir(), 'rel') : null;
 
         try {
@@ -49,17 +51,39 @@ class VerifyReleasePackage
     }
 
     /**
+     * Las claves públicas en las que confía esta instalación: la principal (config/release-public.key) y las de
+     * rotación (config/release-public-keys/*.key), sin repetidas ni vacías.
+     *
+     * @return list<string>
+     */
+    public static function trustedKeys(): array
+    {
+        $keys = array_merge([config('release.public_key')], (array) config('release.extra_public_keys'));
+
+        return array_values(array_unique(array_filter(array_map(fn ($key): string => trim((string) $key), $keys))));
+    }
+
+    /**
+     * @param  list<string|null>  $publicKeys
      * @return array<string, mixed>
      */
-    private function verifiedManifest(string $directory, ?string $publicKey): array
+    private function verifiedManifest(string $directory, array $publicKeys): array
     {
         if (! extension_loaded('sodium')) {
             throw new RuntimeException('Falta la extensión PHP «sodium» para comprobar la firma.');
         }
 
-        $key = $publicKey === null ? false : base64_decode(trim($publicKey), true);
+        $trusted = [];
 
-        if ($key === false || strlen($key) !== SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES) {
+        foreach ($publicKeys as $publicKey) {
+            $raw = $publicKey === null ? false : base64_decode(trim($publicKey), true);
+
+            if ($raw !== false && strlen($raw) === SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES) {
+                $trusted[SigningKeyFile::fingerprint(base64_encode($raw))] = $raw;
+            }
+        }
+
+        if ($trusted === []) {
             throw new RuntimeException('No hay una clave pública válida (config/release-public.key; créala con php artisan release:keygen).');
         }
 
@@ -73,11 +97,32 @@ class VerifyReleasePackage
         $bytes = (string) file_get_contents($manifestPath);
         $signature = base64_decode(trim((string) file_get_contents($signaturePath)), true);
 
-        if ($signature === false || strlen($signature) !== SODIUM_CRYPTO_SIGN_BYTES || ! sodium_crypto_sign_verify_detached($signature, $bytes, $key)) {
-            throw new RuntimeException('La firma del manifiesto no es válida: el paquete no viene de quien tiene la clave privada o fue alterado.');
+        $signedWith = null;
+
+        if ($signature !== false && strlen($signature) === SODIUM_CRYPTO_SIGN_BYTES) {
+            foreach ($trusted as $fingerprint => $key) {
+                if (sodium_crypto_sign_verify_detached($signature, $bytes, $key)) {
+                    $signedWith = $fingerprint;
+
+                    break;
+                }
+            }
         }
 
         $manifest = json_decode($bytes, true);
+
+        if ($signedWith === null) {
+            $claimed = is_array($manifest) && is_string($manifest['signing_key'] ?? null) ? $manifest['signing_key'] : null;
+            $hint = $claimed !== null && ! isset($trusted[$claimed])
+                ? " El paquete dice estar firmado con la clave {$claimed}, que no figura entre las claves de confianza de esta instalación (".implode(', ', array_keys($trusted)).'). Si es una rotación, la clave nueva debe viajar antes en una versión firmada con la actual.'
+                : '';
+
+            throw new RuntimeException('La firma del manifiesto no es válida: el paquete no viene de quien tiene la clave privada o fue alterado.'.$hint);
+        }
+
+        if (isset($manifest['signing_key']) && $manifest['signing_key'] !== $signedWith) {
+            throw new RuntimeException("El manifiesto dice estar firmado con la clave {$manifest['signing_key']}, pero la firma corresponde a {$signedWith}.");
+        }
 
         if (! is_array($manifest) || ($manifest['format'] ?? null) !== BuildReleasePackage::FORMAT
             || ! BumpVersion::isValid((string) ($manifest['version'] ?? ''))
@@ -85,6 +130,8 @@ class VerifyReleasePackage
             || ! isset($manifest['package']['size'], $manifest['package']['sha256'])) {
             throw new RuntimeException('El manifiesto está firmado pero tiene un formato que esta versión de la aplicación no entiende.');
         }
+
+        $manifest['verified_with'] = $signedWith;
 
         return $manifest;
     }

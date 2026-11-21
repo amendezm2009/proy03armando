@@ -18,6 +18,8 @@ use RuntimeException;
  *   {proyecto}_keys/private/20261120-20-53-release-private.key   protegida con contraseña; NUNCA al repositorio ni al servidor
  *   {proyecto}_keys/public/20261120-20-53-release-public.key     copia de la pública
  * y copia la pública a config/release-public.key, que sí se sube al repositorio (solo sirve para comprobar firmas).
+ * Si ya existe una clave pública del proyecto, es una ROTACIÓN: la nueva se guarda en config/release-public-keys/ (la
+ * aplicación confía en ambas) y la vigente sigue firmando hasta que cambies con release:use-key.
  *
  * Después: php artisan release:use-key <archivo privado> lo registra en el .env y hay que guardar una copia de la
  * carpeta de claves en otro lugar (USB, gestor de contraseñas o nube cifrada): sin la privada no se pueden firmar
@@ -30,7 +32,7 @@ use RuntimeException;
     {directory? : Carpeta raíz de claves (por omisión, <proyecto>_keys junto a la carpeta del proyecto)}
     {--no-passphrase : Guarda la clave privada SIN contraseña (no recomendado)}
     {--no-copy : No copia la clave pública a config/release-public.key}
-    {--force : Reemplaza config/release-public.key si ya existe}')]
+    {--force : Reemplaza config/release-public.key si ya existe (sin --force, la pública nueva se guarda en config/release-public-keys/ para rotar claves)}')]
 #[Description('Crea el par de claves con el que se firman las versiones (fuera del proyecto, con contraseña)')]
 class ReleaseKeygen extends Command
 {
@@ -44,13 +46,9 @@ class ReleaseKeygen extends Command
             return self::FAILURE;
         }
 
-        $publicCopy = $this->option('no-copy') ? null : (string) config('release.public_key_file');
-
-        if ($publicCopy !== null && File::exists($publicCopy) && ! $this->option('force')) {
-            $this->components->error('El proyecto ya tiene una clave pública (config/release-public.key). Reemplazarla invalida las versiones ya firmadas: usa --force si es lo que quieres.');
-
-            return self::FAILURE;
-        }
+        $primary = (string) config('release.public_key_file');
+        $rotation = ! $this->option('no-copy') && File::exists($primary) && ! $this->option('force');
+        $publicCopy = $this->option('no-copy') || $rotation ? null : $primary;
 
         $passphrase = $this->option('no-passphrase') ? null : $this->passphrase();
 
@@ -76,6 +74,15 @@ class ReleaseKeygen extends Command
 
         if ($publicCopy !== null) {
             $this->components->twoColumnDetail('Copia para el repositorio', 'config/release-public.key (haz commit de ese archivo)');
+        }
+
+        if ($rotation) {
+            $extra = rtrim((string) config('release.public_keys_directory'), '/\\').DIRECTORY_SEPARATOR.str_replace('-', '', $pair['fingerprint']).'.key';
+            File::ensureDirectoryExists(dirname($extra));
+            File::put($extra, trim((string) file_get_contents($pair['public']))."\n");
+
+            $this->components->twoColumnDetail('Rotación', 'la pública nueva quedó en config/release-public-keys/'.basename($extra).' (haz commit)');
+            $this->components->warn('La clave actual sigue siendo la vigente. Pasos: 1) publica una versión firmada con la clave ACTUAL que ya incluya ese archivo; 2) cuando los servidores la tengan instalada, usa la nueva con php artisan release:use-key. Con --force la nueva reemplaza a la principal (invalida las versiones ya firmadas).');
         }
 
         $this->components->warn('Guarda una copia de la carpeta de claves en otro lugar (USB, gestor de contraseñas o nube cifrada). Sin la privada no puedes firmar versiones. No la envíes por correo.');

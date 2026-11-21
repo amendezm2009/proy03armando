@@ -51,31 +51,37 @@ class CheckSigningKey
             return $rows;
         }
 
-        if (! is_file($publicKeyFile)) {
+        /** @var array<string, string> $trusted huella => clave pública (Base64) de cada clave de confianza */
+        $trusted = [];
+        $extras = array_filter(array_map(fn ($key): string => trim((string) $key), (array) config('release.extra_public_keys')));
+
+        if (! is_file($publicKeyFile) && $extras === []) {
             $add(false, 'Clave pública del proyecto', "no existe {$publicKeyFile}");
 
             return $rows;
         }
 
-        $projectPublic = trim((string) file_get_contents($publicKeyFile));
+        $candidates = is_file($publicKeyFile) ? [trim((string) file_get_contents($publicKeyFile)), ...$extras] : $extras;
 
-        try {
-            $projectFingerprint = SigningKeyFile::fingerprint($projectPublic);
-        } catch (Throwable $exception) {
-            $add(false, 'Clave pública del proyecto', $exception->getMessage());
+        foreach ($candidates as $candidate) {
+            try {
+                $trusted[SigningKeyFile::fingerprint($candidate)] = $candidate;
+            } catch (Throwable $exception) {
+                $add(false, 'Clave pública del proyecto', $exception->getMessage());
 
-            return $rows;
+                return $rows;
+            }
         }
 
         $privateFingerprint = SigningKeyFile::fingerprint($privatePublic);
-        $add(true, 'Clave pública del proyecto', "huella {$projectFingerprint}");
+        $add(true, 'Clave pública del proyecto', count($trusted) === 1 ? 'huella '.array_key_first($trusted) : count($trusted).' claves de confianza: '.implode(', ', array_keys($trusted)));
 
-        if (! $add($privateFingerprint === $projectFingerprint, 'La privada y la pública son del mismo par', "privada {$privateFingerprint}, pública {$projectFingerprint}")) {
+        if (! $add(isset($trusted[$privateFingerprint]), 'La privada y la pública son del mismo par', "privada {$privateFingerprint}, de confianza: ".implode(', ', array_keys($trusted)))) {
             return $rows;
         }
 
         if ($deep) {
-            $rows[] = $this->signingRoundTrip($privatePath, $passphrase, $projectPublic);
+            $rows[] = $this->signingRoundTrip($privatePath, $passphrase, $trusted[$privateFingerprint]);
         }
 
         return $rows;

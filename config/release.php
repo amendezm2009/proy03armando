@@ -1,6 +1,13 @@
 <?php
 
 $publicKeyFile = base_path('config/release-public.key');
+$extraKeysDirectory = base_path('config/release-public-keys');
+
+$extraPublicKeys = [];
+
+foreach (glob($extraKeysDirectory.DIRECTORY_SEPARATOR.'*.key') ?: [] as $extraKeyFile) {
+    $extraPublicKeys[] = trim((string) file_get_contents($extraKeyFile));
+}
 
 return [
 
@@ -19,6 +26,18 @@ return [
     'public_key_file' => $publicKeyFile,
 
     'public_key' => is_file($publicKeyFile) ? trim((string) file_get_contents($publicKeyFile)) : null,
+
+    /*
+    | Rotación de claves: además de la clave principal, la aplicación confía en las claves públicas (una por archivo
+    | .key, en Base64) de config/release-public-keys/. Para cambiar de clave sin dejar servidores atrás: 1) release:keygen
+    | guarda la nueva pública ahí (la principal sigue siendo la vigente); 2) publicas una versión firmada con la clave
+    | ACTUAL que ya lleva la nueva pública; 3) cuando los servidores la instalaron, firmas con la nueva
+    | (release:use-key). Esa versión de transición es la "rotación firmada": la clave nueva llega avalada por la vieja.
+    */
+
+    'public_keys_directory' => $extraKeysDirectory,
+
+    'extra_public_keys' => $extraPublicKeys,
 
     /*
     |--------------------------------------------------------------------------
