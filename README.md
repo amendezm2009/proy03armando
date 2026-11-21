@@ -12,7 +12,7 @@ Proyecto desarrollado con **Laravel 13**, **MySQL**, **Bootstrap 5**, **jQuery**
 - **Compilador de Assets:** Vite
 - **Seguridad y Permisos:** Laravel Sanctum (APIs) + Spatie Laravel-Permission (Roles y Permisos RBAC)
 - **Autenticación UI:** vistas Blade propias con Bootstrap 5
-- **Exportaciones:** Laravel Excel (`maatwebsite/excel`) para exportar e importar clasificaciones. Los reportes en PDF y Excel de productos quedaron **descartados**.
+- **Exportaciones:** Laravel Excel (`maatwebsite/excel`) para exportar e importar clasificaciones.
 - **Testing:** Pest PHP
 
 ---
@@ -223,8 +223,6 @@ flowchart TD
   - **Corregido en esta revisión:** (1) la API entregaba `purchase_price` al cliente; ahora solo lo ve quien tiene `products.update`, igual que la ficha web; (2) el QR usaba el dominio de la petición, ahora usa `APP_URL` (una etiqueta impresa desde `localhost` o con un `Host` falsificado ya no sale con esa dirección); (3) los archivos públicos llevan `Content-Security-Policy: default-src 'none'; sandbox`; (4) eliminar un producto queda en el log (`product.deleted`, con quien lo hizo y si fue definitivo); (5) al eliminar un producto definitivamente se borran sus archivos del disco (antes quedaban huérfanos).
   - **Comprobado sin cambios:** todo se muestra escapado (nombres, descripciones, etiquetas y nombres de archivo con `<script>` o comillas); la búsqueda y los filtros usan parámetros enlazados (probado con intentos de inyección SQL); no hay SQL ni HTML crudo en `app/`, `resources/` ni `routes/`; `slug`, autor y portada no se asignan desde la petición.
   - **Limitaciones conocidas:** quien tenga la URL de un archivo lo ve aunque el producto esté inactivo o eliminado (los nombres son aleatorios de 40 caracteres); el cliente ve por defecto solo los activos, pero puede pedir los inactivos con el filtro "Estado" (es una preferencia de vista, no un bloqueo; si debiera ser un bloqueo, basta quitar esa opción en `ProductIndexRequest::filters()`); **resueltas en la Fase 5:** la búsqueda ya trata `%` y `_` como texto literal y los 401/403 se registran en el canal `security` (A03 y A09).
-- [x] **Cancelado:** historial de movimientos de stock (`stock_movements`), carrito de compra y pedidos. No se implementarán; el stock se edita directamente en el producto.
-
 ---
 
 ### Fase 5: Auditoría de Seguridad OWASP Top 10 y Cierre
