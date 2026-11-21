@@ -166,6 +166,7 @@ describe('empaquetado', function () {
             ->and($manifest['version'])->toBe('1.2.0')
             ->and($manifest['previous_version'])->toBe('1.1.0')
             ->and($manifest['commit'])->toBe('abc1234')
+            ->and($manifest['build'])->toBe(1)
             ->and($manifest['requires_php'])->toBe('^8.3')
             ->and($manifest['migrations'])->toBe(['2026_01_01_000000_crear_algo.php'])
             ->and(array_sum(array_column($manifest['parts'], 'size')))->toBe($manifest['package']['size'])
@@ -179,6 +180,19 @@ describe('empaquetado', function () {
         }
     });
 
+    it('registra el número de build y lo exige mayor o igual que 1', function () {
+        $keys = releaseKeys();
+        $source = releaseSource($this->tmp, '1.2.0');
+        $builder = app(BuildReleasePackage::class);
+
+        $manifest = $builder->handle($source, $this->tmp.'/releases', '1.2.0', $keys['secret'], 2048, build: 3);
+
+        expect($manifest['build'])->toBe(3)
+            ->and(json_decode(file_get_contents($this->tmp.'/releases/v1.2.0/manifest.json'), true)['build'])->toBe(3)
+            ->and(fn () => $builder->handle($source, $this->tmp.'/otra-salida', '1.2.0', $keys['secret'], 2048, build: 0))
+            ->toThrow(InvalidArgumentException::class, 'build');
+    });
+
     it('lleva el código y la compilación, pero nunca secretos, datos del servidor ni caché', function () {
         ['directory' => $directory, 'manifest' => $manifest] = builtRelease($this->tmp);
 
@@ -186,6 +200,40 @@ describe('empaquetado', function () {
 
         expect($entries)->toContain('RELEASE.json', 'artisan', 'VERSION', 'vendor/autoload.php', 'public/build/manifest.json', '.env.example', 'bootstrap/cache/.gitignore')
             ->and($entries)->not->toContain('.env', '.env.production', 'storage/logs/laravel.log', 'storage/app/public/foto.jpg', 'tests/ExampleTest.php', 'node_modules/paquete/index.js', '.git/config', 'bootstrap/cache/config.php', 'vendor/paquete/.git/HEAD');
+    });
+
+    it('anota en el manifiesto la huella de la clave que firma y nunca empaqueta una clave privada', function () {
+        $keys = releaseKeys();
+        $source = releaseSource($this->tmp);
+        File::ensureDirectoryExists($source.'/config');
+        file_put_contents($source.'/config/20261120-20-53-release-private.key', 'clave privada olvidada en el proyecto');
+        file_put_contents($source.'/config/release-public.key', $keys['public']."\n");
+
+        $manifest = app(BuildReleasePackage::class)->handle($source, $this->tmp.'/releases', '1.2.0', $keys['secret'], 2048);
+        $entries = releaseEntries($this->tmp.'/releases/v1.2.0', $manifest);
+
+        expect($manifest['signing_key'])->toBe(SigningKeyFile::fingerprint($keys['public']))
+            ->and($manifest['signing_key'])->toMatch('/^[0-9A-F]{4}(-[0-9A-F]{4}){3}$/')
+            ->and($entries)->toContain('config/release-public.key')
+            ->and($entries)->not->toContain('config/20261120-20-53-release-private.key');
+    });
+
+    it('deja fuera las herramientas de desarrollo de la raíz (config release.exclude) y lleva el resto', function () {
+        $keys = releaseKeys();
+        $source = releaseSource($this->tmp);
+
+        foreach (['.claude/skills/x/SKILL.md' => 'ia', '.agents/mcp_config.json' => '{}', 'CLAUDE.md' => 'guía', 'package.json' => '{}', 'vite.config.js' => '//', 'phpunit.xml' => '<x/>', 'mi carpeta de pruebas/api.yml' => 'a', 'docs/uso.md' => 'se queda'] as $path => $contents) {
+            File::ensureDirectoryExists(dirname($source.'/'.$path));
+            file_put_contents($source.'/'.$path, $contents);
+        }
+
+        config(['release.exclude' => ['.claude', '.agents', 'CLAUDE.md', 'package.json', 'vite.config.js', 'phpunit.xml', 'mi carpeta de pruebas']]);
+
+        $manifest = app(BuildReleasePackage::class)->handle($source, $this->tmp.'/releases', '1.2.0', $keys['secret'], 2048);
+        $entries = releaseEntries($this->tmp.'/releases/v1.2.0', $manifest);
+
+        expect($entries)->toContain('composer.json', 'artisan', 'docs/uso.md', 'vendor/autoload.php', 'public/build/manifest.json')
+            ->and($entries)->not->toContain('.claude/skills/x/SKILL.md', '.agents/mcp_config.json', 'CLAUDE.md', 'package.json', 'vite.config.js', 'phpunit.xml', 'mi carpeta de pruebas/api.yml');
     });
 
     it('no sobrescribe una versión ya publicada', function () {
@@ -223,6 +271,61 @@ describe('verificación', function () {
 
         expect(fn () => app(VerifyReleasePackage::class)->handle($directory, releaseKeys()['public']))->toThrow(RuntimeException::class, 'firma')
             ->and(fn () => app(VerifyReleasePackage::class)->handle($directory, null))->toThrow(RuntimeException::class, 'clave pública');
+    });
+
+    it('con varias claves de confianza acepta la que firmó y dice cuál fue', function () {
+        ['directory' => $directory, 'keys' => $keys] = builtRelease($this->tmp);
+        $verify = app(VerifyReleasePackage::class);
+        $other = releaseKeys();
+
+        $manifest = $verify->handle($directory, [$other['public'], $keys['public']]);
+
+        expect($manifest['verified_with'])->toBe(SigningKeyFile::fingerprint($keys['public']))
+            ->and($verify->handle($directory, [null, 'no-es-una-clave', $keys['public']])['version'])->toBe('1.2.0');
+    });
+
+    it('si la clave que firmó no es de confianza, el error nombra su huella y las de confianza', function () {
+        ['directory' => $directory, 'keys' => $keys] = builtRelease($this->tmp);
+        $other = releaseKeys();
+
+        $thrown = null;
+
+        try {
+            app(VerifyReleasePackage::class)->handle($directory, [$other['public']]);
+        } catch (RuntimeException $exception) {
+            $thrown = $exception->getMessage();
+        }
+
+        expect($thrown)->toContain('La firma del manifiesto no es válida')
+            ->and($thrown)->toContain(SigningKeyFile::fingerprint($keys['public']))
+            ->and($thrown)->toContain(SigningKeyFile::fingerprint($other['public']))
+            ->and($thrown)->toContain('rotación');
+    });
+
+    it('rechaza un manifiesto que anota una huella distinta a la de la firma', function () {
+        $keys = releaseKeys();
+        $other = releaseKeys();
+        $directory = $this->tmp.'/forjado/v1.2.0';
+        File::ensureDirectoryExists($directory);
+
+        $manifest = json_encode(['format' => 1, 'version' => '1.2.0', 'signing_key' => SigningKeyFile::fingerprint($other['public']), 'package' => ['size' => 1, 'sha256' => 'x'], 'parts' => [['file' => 'a', 'size' => 1, 'sha256' => 'x']]], JSON_PRETTY_PRINT);
+        file_put_contents($directory.'/manifest.json', $manifest);
+        file_put_contents($directory.'/manifest.json.sig', base64_encode(sodium_crypto_sign_detached($manifest, base64_decode($keys['secret'])))."\n");
+
+        expect(fn () => app(VerifyReleasePackage::class)->handle($directory, [$keys['public'], $other['public']]))
+            ->toThrow(RuntimeException::class, 'pero la firma corresponde a');
+    });
+
+    it('trustedKeys junta la clave principal y las de rotación sin repetir ni dejar vacías', function () {
+        $first = releaseKeys()['public'];
+        $second = releaseKeys()['public'];
+        config(['release.public_key' => $first, 'release.extra_public_keys' => [$second, $first, '', '  ']]);
+
+        expect(VerifyReleasePackage::trustedKeys())->toBe([$first, $second]);
+
+        config(['release.public_key' => null, 'release.extra_public_keys' => []]);
+
+        expect(VerifyReleasePackage::trustedKeys())->toBe([]);
     });
 
     it('rechaza un manifiesto modificado aunque las partes sean las originales', function () {
@@ -300,7 +403,7 @@ describe('comandos', function () {
             ->expectsOutputToContain('empaquetada y verificada')
             ->assertSuccessful();
 
-        $this->artisan('release:verify', ['directory' => $output.'/v1.2.0'])->expectsOutputToContain('firma válida')->assertSuccessful();
+        $this->artisan('release:verify', ['directory' => $output.'/v1.2.0'])->expectsOutputToContain('firma válida (clave '.SigningKeyFile::fingerprint($keys['public']).')')->assertSuccessful();
         $this->artisan('release:verify', ['directory' => $output.'/v1.2.0', '--quick' => true])->assertSuccessful();
 
         $part = $output.'/v1.2.0/app-v1.2.0.zip.001';

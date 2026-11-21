@@ -77,6 +77,14 @@
                                 </a>
                             </li>
                         @endcan
+                        @can(App\PermissionName::ManageUpdates->value)
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('updates.*') ? 'active fw-semibold' : '' }}"
+                                    href="{{ route('updates.index') }}">
+                                    <i class="bi bi-cloud-arrow-up me-1"></i> Actualizaciones
+                                </a>
+                            </li>
+                        @endcan
                         @can(App\PermissionName::ViewProducts->value)
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('products.*') ? 'active fw-semibold' : '' }}"
@@ -138,6 +146,20 @@
     <!-- Contenido Principal -->
     <main class="py-4 flex-grow-1">
         <div class="container-fluid px-4">
+            <!-- Aviso a administradores: el público ve "mantenimiento" mientras la configuración tenga errores graves -->
+            @if(!empty($publicBlocked))
+                <div class="alert alert-warning shadow-sm border-0 d-flex align-items-center" role="alert">
+                    <i class="bi bi-cone-striped fs-5 me-2"></i>
+                    <div>
+                        El público y los clientes ven la página de <strong>mantenimiento</strong> porque la configuración de producción
+                        tiene errores graves. Tú puedes entrar para corregirlos y probar el sitio; cuando ya no haya errores, se abre solo.
+                        @can(App\PermissionName::ViewSecurityReport->value)
+                            <a href="{{ route('security.report') }}" class="alert-link">Ver el informe de seguridad</a>.
+                        @endcan
+                    </div>
+                </div>
+            @endif
+
             <!-- Alertas del Sistema -->
             @if(session('success'))
                 <div class="alert alert-success alert-dismissible fade show shadow-sm border-0 d-flex align-items-center"

@@ -30,4 +30,18 @@ return [
 
     'hsts_max_age' => (int) env('SECURITY_HSTS_MAX_AGE', 31536000),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Mantenimiento automático por errores de configuración
+    |--------------------------------------------------------------------------
+    |
+    | En producción, mientras alguna revisión grave de php artisan security:check falle (FALLA), el público y los
+    | clientes ven la página de mantenimiento y solo los administradores entran al sitio para corregirlo y probarlo.
+    | Al corregir el error, el sitio vuelve solo. Ver App\Http\Middleware\RestrictPublicOnConfigurationErrors.
+    | Ponlo en false solo si prefieres que el sitio siga abierto con la configuración a medias.
+    |
+    */
+
+    'block_on_errors' => (bool) env('SECURITY_BLOCK_ON_ERRORS', true),
+
 ];

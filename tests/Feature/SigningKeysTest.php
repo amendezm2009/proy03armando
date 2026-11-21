@@ -168,6 +168,23 @@ describe('CheckSigningKey', function () {
         expect(CheckSigningKey::passes($deep))->toBeFalse()->and(end($deep)['detail'])->toContain('Contraseña incorrecta');
     });
 
+    it('acepta una clave cuya pública está entre las de rotación y lo dice', function () {
+        $current = signingPair($this->tmp.'/proy_keys', SIGNING_PASSPHRASE, config('release.public_key_file'));
+        $next = signingPair($this->tmp.'/siguiente_keys');
+        config(['release.extra_public_keys' => [trim(file_get_contents($next['public']))]]);
+
+        $rows = app(CheckSigningKey::class)->handle($next['private'], config('release.public_key_file'), SIGNING_PASSPHRASE, deep: true);
+
+        expect(CheckSigningKey::passes($rows))->toBeTrue()
+            ->and($rows[2]['detail'])->toContain('2 claves de confianza')
+            ->and($rows[2]['detail'])->toContain($current['fingerprint'])
+            ->and($rows[2]['detail'])->toContain($next['fingerprint']);
+
+        config(['release.extra_public_keys' => []]);
+
+        expect(CheckSigningKey::passes(app(CheckSigningKey::class)->handle($next['private'], config('release.public_key_file'))))->toBeFalse();
+    });
+
     it('rechaza una clave guardada dentro de la carpeta del proyecto', function () {
         $root = base_path('storage/framework/testing/keys-'.bin2hex(random_bytes(4)));
 
@@ -227,17 +244,31 @@ describe('release:keygen', function () {
             ->and(is_file($this->tmp.'/config/release-public.key'))->toBeFalse();
     });
 
-    it('no reemplaza la clave pública del proyecto sin --force', function () {
-        config(['release.key_passphrase' => SIGNING_PASSPHRASE]);
+    it('si ya hay clave pública es una rotación: la nueva va a release-public-keys y la vigente no se toca', function () {
+        config(['release.key_passphrase' => SIGNING_PASSPHRASE, 'release.public_keys_directory' => $this->tmp.'/config/release-public-keys']);
         File::ensureDirectoryExists($this->tmp.'/config');
         file_put_contents($this->tmp.'/config/release-public.key', "existente\n");
 
-        $this->artisan('release:keygen')->expectsOutputToContain('ya tiene una clave pública')->assertFailed();
+        $this->artisan('release:keygen')->expectsOutputToContain('Rotación')->assertSuccessful();
+
+        $public = glob($this->tmp.'/proy_keys/public/*-release-public.key');
+        $extra = glob($this->tmp.'/config/release-public-keys/*.key');
 
         expect(file_get_contents($this->tmp.'/config/release-public.key'))->toBe("existente\n")
-            ->and(glob($this->tmp.'/proy_keys/private/*'))->toBeEmpty();
+            ->and($extra)->toHaveCount(1)
+            ->and(trim(file_get_contents($extra[0])))->toBe(trim(file_get_contents($public[0])))
+            ->and(basename($extra[0]))->toBe(str_replace('-', '', SigningKeyFile::fingerprint(trim(file_get_contents($public[0])))).'.key');
+    });
+
+    it('--force reemplaza la clave pública principal en vez de rotar', function () {
+        config(['release.key_passphrase' => SIGNING_PASSPHRASE, 'release.public_keys_directory' => $this->tmp.'/config/release-public-keys']);
+        File::ensureDirectoryExists($this->tmp.'/config');
+        file_put_contents($this->tmp.'/config/release-public.key', "existente\n");
 
         $this->artisan('release:keygen', ['--force' => true])->assertSuccessful();
+
+        expect(file_get_contents($this->tmp.'/config/release-public.key'))->not->toBe("existente\n")
+            ->and(glob($this->tmp.'/config/release-public-keys/*.key'))->toBeEmpty();
     });
 
     it('no acepta una carpeta de claves dentro del proyecto', function () {

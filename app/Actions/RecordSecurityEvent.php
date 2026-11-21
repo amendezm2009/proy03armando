@@ -18,12 +18,13 @@ use Illuminate\Support\Str;
  *
  * Eventos: auth.login, auth.login_failed, auth.lockout, auth.logout, auth.password_reset, auth.password_changed,
  * auth.password_confirm_lockout, auth.token_issued, auth.token_revoked, security.report_viewed (consulta del informe
- * de /admin/seguridad) y http.denied (401, 403, 419 y 429). La revisión programada anota "security.check" aparte.
+ * de /admin/seguridad), update.part_uploaded, update.started, update.finished, update.rolled_back, update.reverted y
+ * update.discarded (actualizaciones desde /admin/actualizaciones) y http.denied (401, 403, 419 y 429). La revisión programada anota "security.check" aparte.
  */
 class RecordSecurityEvent
 {
     /** Eventos que indican un problema o un intento de abuso: se anotan como "warning"; el resto, como "info". */
-    private const WARNINGS = ['auth.login_failed', 'auth.lockout', 'auth.password_confirm_lockout', 'http.denied'];
+    private const WARNINGS = ['auth.login_failed', 'auth.lockout', 'auth.password_confirm_lockout', 'http.denied', 'update.rolled_back', 'update.reverted'];
 
     /**
      * @param  array<string, mixed>  $context

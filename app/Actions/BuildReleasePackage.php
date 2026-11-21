@@ -21,10 +21,16 @@ use ZipArchive;
  *   manifest.json                     versión, hashes SHA-256 de cada parte y del ZIP completo, migraciones, PHP mínimo
  *   manifest.json.sig                 firma Ed25519 (Base64) del manifest.json; ver config/release.php
  *
+ * "build" cuenta las veces que se generó la misma versión: 1 la primera vez y +1 cada vez que se regenera sin cambiar
+ * el número (así dos paquetes de la misma versión se distinguen aunque tengan el mismo código).
+ *
  * Dentro del ZIP, RELEASE.json lista el SHA-256 de cada archivo. Así la cadena de confianza es: firma → manifest.json
  * → hash del ZIP → RELEASE.json → hash de cada archivo (App\Actions\VerifyReleasePackage recorre esa cadena).
  *
- * Nunca se empaquetan: .git, .env*, node_modules, tests, storage (los datos del servidor no se reemplazan), logs ni
+ * "signing_key" es la huella de la clave pública que debe verificar la firma (ver SigningKeyFile::fingerprint): sirve
+ * para decir con claridad con qué clave está firmado un paquete y para elegir entre varias claves de confianza.
+ *
+ * Nunca se empaquetan: .git, .env*, *release-private.key, node_modules, tests, storage (los datos del servidor no se reemplazan), logs ni
  * la caché de bootstrap/cache.
  *
  * USO: app(BuildReleasePackage::class)->handle($carpetaPreparada, base_path('releases'), '1.2.0', $claveSecretaBase64, 9 * 1024 * 1024)
@@ -50,9 +56,14 @@ class BuildReleasePackage
         int $partSize,
         ?string $previousVersion = null,
         ?string $commit = null,
+        int $build = 1,
     ): array {
         if (! BumpVersion::isValid($version) || ($previousVersion !== null && ! BumpVersion::isValid($previousVersion))) {
             throw new InvalidArgumentException('Las versiones deben tener el formato MAYOR.MENOR.PARCHE.');
+        }
+
+        if ($build < 1) {
+            throw new InvalidArgumentException('El número de build debe ser un entero mayor o igual que 1.');
         }
 
         if ($partSize < 1024) {
@@ -70,7 +81,7 @@ class BuildReleasePackage
         File::ensureDirectoryExists($releaseDir);
 
         try {
-            return $this->build($source, $releaseDir, $version, $secret, $partSize, $previousVersion, $commit);
+            return $this->build($source, $releaseDir, $version, $secret, $partSize, $previousVersion, $commit, $build);
         } catch (Throwable $exception) {
             File::deleteDirectory($releaseDir);
 
@@ -81,7 +92,7 @@ class BuildReleasePackage
     /**
      * @return array<string, mixed>
      */
-    private function build(string $source, string $releaseDir, string $version, string $secret, int $partSize, ?string $previousVersion, ?string $commit): array
+    private function build(string $source, string $releaseDir, string $version, string $secret, int $partSize, ?string $previousVersion, ?string $commit, int $build): array
     {
         $files = $this->collectFiles($source);
         $zipName = "app-v{$version}.zip";
@@ -97,10 +108,12 @@ class BuildReleasePackage
         $manifest = [
             'format' => self::FORMAT,
             'version' => $version,
+            'build' => $build,
             'previous_version' => $previousVersion,
             'requires_php' => $this->requiredPhp($source),
             'built_at' => gmdate('c'),
             'commit' => $commit,
+            'signing_key' => SigningKeyFile::fingerprint(base64_encode(sodium_crypto_sign_publickey_from_secretkey($secret))),
             'migrations' => $this->migrationNames($source),
             'package' => $package,
             'parts' => $parts,
@@ -194,7 +207,7 @@ class BuildReleasePackage
         $segments = explode('/', $relative);
         $name = end($segments);
 
-        if (in_array($segments[0], self::EXCLUDED_ROOT_DIRECTORIES, true) || in_array('.git', $segments, true)) {
+        if (in_array($segments[0], [...self::EXCLUDED_ROOT_DIRECTORIES, ...(array) config('release.exclude')], true) || in_array('.git', $segments, true)) {
             return true;
         }
 
@@ -207,6 +220,7 @@ class BuildReleasePackage
         }
 
         return (str_starts_with($name, '.env') && $name !== '.env.example')
+            || str_ends_with($name, 'release-private.key')
             || str_ends_with($name, '.log')
             || in_array($name, ['.DS_Store', 'Thumbs.db', '.phpunit.result.cache'], true);
     }

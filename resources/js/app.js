@@ -32,6 +32,11 @@ if (document.querySelector('[data-classification-picker]')) {
     import('./classification-picker');
 }
 
+// Actualizaciones desde la web (/admin/actualizaciones): se carga aparte, solo en esa página
+if (document.querySelector('[data-updates]')) {
+    import('./updates');
+}
+
 // Selectores que navegan al elegir una opción (<x-per-page-select>): se usa un atributo y no "onchange" en
 // línea, que la política de seguridad de contenido (CSP) bloquea.
 document.addEventListener('change', (event) => {

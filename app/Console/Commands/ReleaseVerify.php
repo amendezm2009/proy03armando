@@ -22,14 +22,14 @@ class ReleaseVerify extends Command
     public function handle(VerifyReleasePackage $verify): int
     {
         try {
-            $manifest = $verify->handle((string) $this->argument('directory'), config('release.public_key'), deep: ! $this->option('quick'));
+            $manifest = $verify->handle((string) $this->argument('directory'), VerifyReleasePackage::trustedKeys(), deep: ! $this->option('quick'));
         } catch (RuntimeException $exception) {
             $this->components->error($exception->getMessage());
 
             return self::FAILURE;
         }
 
-        $this->components->info("Versión {$manifest['version']} verificada: firma válida, ".count($manifest['parts']).' parte(s)'.($this->option('quick') ? '.' : " y {$manifest['package']['files']} archivos con el SHA-256 correcto."));
+        $this->components->info("Versión {$manifest['version']} verificada: firma válida (clave {$manifest['verified_with']}), ".count($manifest['parts']).' parte(s)'.($this->option('quick') ? '.' : " y {$manifest['package']['files']} archivos con el SHA-256 correcto."));
 
         return self::SUCCESS;
     }

@@ -25,4 +25,7 @@ enum PermissionName: string
 
     // Informe de seguridad de la configuración (/admin/seguridad): solo el administrador.
     case ViewSecurityReport = 'security.view';
+
+    // Actualizar la aplicación desde la web (/admin/actualizaciones): subir un paquete firmado e instalarlo. Solo el administrador.
+    case ManageUpdates = 'updates.manage';
 }

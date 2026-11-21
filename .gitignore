@@ -26,3 +26,8 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Claves de firma de versiones: nunca al repositorio
+/*_keys/
+release-private.key
+*-release-private.key

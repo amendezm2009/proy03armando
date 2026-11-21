@@ -17,6 +17,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductMediaController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SecurityReportController;
+use App\Http\Controllers\UpdateController;
 use App\Http\Controllers\UserController;
 use App\Http\ResourceAuthorization;
 use App\PermissionName;
@@ -62,6 +63,21 @@ Route::middleware('auth')->group(function () {
     Route::post('admin/seguridad', [SecurityReportController::class, 'store'])
         ->middleware([ResourceAuthorization::needs(PermissionName::ViewSecurityReport), 'throttle:password'])
         ->name('security.report.show');
+
+    // Actualizaciones desde la web: subir un paquete firmado, verificarlo e instalarlo paso a paso (solo el administrador).
+    // La instalación pone la aplicación en mantenimiento, pero estas rutas siguen disponibles (bootstrap/app.php).
+    Route::prefix('admin/actualizaciones')
+        ->middleware([ResourceAuthorization::needs(PermissionName::ManageUpdates), 'throttle:updates'])
+        ->name('updates.')
+        ->group(function () {
+            Route::get('/', [UpdateController::class, 'index'])->name('index');
+            Route::post('subir', [UpdateController::class, 'upload'])->name('upload');
+            Route::post('verificar', [UpdateController::class, 'inspect'])->name('inspect');
+            Route::post('iniciar', [UpdateController::class, 'start'])->middleware('throttle:password')->name('start');
+            Route::post('paso', [UpdateController::class, 'step'])->name('step');
+            Route::post('revertir', [UpdateController::class, 'revert'])->middleware('throttle:password')->name('revert');
+            Route::delete('paquetes/{version}', [UpdateController::class, 'discard'])->where('version', '[0-9.]+')->name('discard');
+        });
     Route::get('cliente/dashboard', [DashboardController::class, 'client'])
         ->middleware(ResourceAuthorization::needs(PermissionName::ViewClientDashboard))
         ->name('client.dashboard');

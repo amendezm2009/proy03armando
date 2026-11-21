@@ -4,6 +4,7 @@ use App\Actions\RecordSecurityEvent;
 use App\Http\Controllers\AvatarFileController;
 use App\Http\Controllers\ProductMediaFileController;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\RestrictPublicOnConfigurationErrors;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\QueryException;
@@ -35,6 +36,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->throttleApi();
+        // Mientras una actualización pone la aplicación en mantenimiento, solo siguen disponibles las páginas del
+        // actualizador (para seguirla y revertirla) y el acceso, por si la sesión del administrador caduca.
+        $middleware->preventRequestsDuringMaintenance(except: ['admin/actualizaciones', 'admin/actualizaciones/*', 'login']);
         // Si cambia la contraseña de una cuenta, sus demás sesiones web dejan de valer (OWASP A07).
         $middleware->authenticateSessions();
         // Cabeceras de seguridad (CSP, X-Frame-Options, HSTS...) en todas las respuestas. Ver SecurityHeaders.
@@ -44,7 +48,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             'cache.headers:no_store;no_cache;must_revalidate;max_age=0',
             EnsureUserIsActive::class,
+            // Público y clientes ven "mantenimiento" mientras la configuración de producción tenga errores graves.
+            RestrictPublicOnConfigurationErrors::class,
         ]);
+        $middleware->api(append: [RestrictPublicOnConfigurationErrors::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $wantsJson = fn (Request $request): bool => $request->is('api/*') || $request->expectsJson();

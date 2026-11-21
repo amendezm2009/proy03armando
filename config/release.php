@@ -1,6 +1,13 @@
 <?php
 
 $publicKeyFile = base_path('config/release-public.key');
+$extraKeysDirectory = base_path('config/release-public-keys');
+
+$extraPublicKeys = [];
+
+foreach (glob($extraKeysDirectory.DIRECTORY_SEPARATOR.'*.key') ?: [] as $extraKeyFile) {
+    $extraPublicKeys[] = trim((string) file_get_contents($extraKeyFile));
+}
 
 return [
 
@@ -19,6 +26,18 @@ return [
     'public_key_file' => $publicKeyFile,
 
     'public_key' => is_file($publicKeyFile) ? trim((string) file_get_contents($publicKeyFile)) : null,
+
+    /*
+    | Rotación de claves: además de la clave principal, la aplicación confía en las claves públicas (una por archivo
+    | .key, en Base64) de config/release-public-keys/. Para cambiar de clave sin dejar servidores atrás: 1) release:keygen
+    | guarda la nueva pública ahí (la principal sigue siendo la vigente); 2) publicas una versión firmada con la clave
+    | ACTUAL que ya lleva la nueva pública; 3) cuando los servidores la instalaron, firmas con la nueva
+    | (release:use-key). Esa versión de transición es la "rotación firmada": la clave nueva llega avalada por la vieja.
+    */
+
+    'public_keys_directory' => $extraKeysDirectory,
+
+    'extra_public_keys' => $extraPublicKeys,
 
     /*
     |--------------------------------------------------------------------------
@@ -52,6 +71,20 @@ return [
     'part_size_mb' => (int) env('RELEASE_PART_SIZE_MB', 9),
 
     /*
+    | exclude: archivos y carpetas de la RAÍZ del proyecto que no viajan en el paquete porque solo sirven para
+    | desarrollar (herramientas de IA, editores, compilación de assets, pruebas). Siempre se excluyen además .git,
+    | .github, .env*, node_modules, tests, storage, releases, logs y cachés (ver BuildReleasePackage). Agrega aquí lo
+    | que tu proyecto tenga de más (por ejemplo, una colección de pruebas de la API).
+    */
+
+    'exclude' => [
+        '.agents', '.claude', '.cursor', '.idea', '.vscode', '.zed', '.nova',
+        '.mcp.json', 'boost.json', 'CLAUDE.md', 'AGENTS.md',
+        'package.json', 'package-lock.json', 'vite.config.js', '.npmrc', 'phpunit.xml', '.editorconfig',
+        '2026 laravel armando',
+    ],
+
+    /*
     |--------------------------------------------------------------------------
     | Comprobación de salud (/health)
     |--------------------------------------------------------------------------
@@ -63,5 +96,23 @@ return [
     */
 
     'health_token' => env('HEALTH_TOKEN'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Actualizaciones desde la web (/admin/actualizaciones)
+    |--------------------------------------------------------------------------
+    |
+    | updates_directory: carpeta privada donde se reciben los paquetes (inbox/), se trabaja (work/) y se guarda el
+    | inventario de archivos de la versión instalada. upload_max_kb: tamaño máximo de cada parte que se sube (10240 =
+    | 10 MiB, el límite habitual de los hostings gratuitos). step_seconds: tiempo máximo de trabajo de cada paso de la
+    | instalación, para no pasar el límite de ejecución de PHP del hosting.
+    |
+    */
+
+    'updates_directory' => env('UPDATES_DIRECTORY') ?: storage_path('app/private/updates'),
+
+    'upload_max_kb' => 10240,
+
+    'step_seconds' => 6,
 
 ];

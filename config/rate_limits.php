@@ -42,4 +42,7 @@ return [
     // Comprobación de salud /health (monitoreo y scripts de despliegue), por IP.
     'health' => (int) env('HEALTH_REQUESTS_PER_MINUTE', 30),
 
+    // Actualizaciones desde la web (subir partes, verificar y avanzar los pasos de la instalación), por IP.
+    'updates' => (int) env('UPDATES_REQUESTS_PER_MINUTE', 240),
+
 ];
