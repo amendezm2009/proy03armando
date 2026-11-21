@@ -23,10 +23,14 @@
     de claves (USB, nube cifrada) y la contraseña (gestor de contraseñas). No se envía nada por correo.
 
 .PARAMETER Tipo
-    patch (corrección), minor (función nueva compatible) o major (cambio que rompe compatibilidad). Si se omite, lo pregunta.
+    patch (corrección), minor (función nueva compatible), major (cambio que rompe compatibilidad) o regenerar
+    (sin cambiar la versión: genera o vuelve a generar el paquete firmado de la versión actual a partir de su etiqueta,
+    que se crea en el commit actual si todavía no existe; la carpeta anterior se conserva como
+    releases\vX.Y.Z.anterior-FECHA). Si se omite, lo pregunta.
 
 .PARAMETER Modo
-    paquete (ZIP en partes, para hosting sin SSH), git (rama de producción) o ambos. Si se omite, lo pregunta.
+    paquete (ZIP en partes, para hosting sin SSH), git (rama de producción) o ambos. Si se omite se usan ambos
+    (al regenerar, solo el paquete).
 
 .PARAMETER RamaBase
     Rama de la que se publica. Por omisión, main.
@@ -47,7 +51,7 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('patch', 'minor', 'major')][string]$Tipo,
+    [ValidateSet('patch', 'minor', 'major', 'regenerar')][string]$Tipo,
     [ValidateSet('paquete', 'git', 'ambos')][string]$Modo,
     [string]$RamaBase = 'main',
     [string]$RamaProduccion = 'production',
@@ -317,11 +321,13 @@ function Elegir-Tipo {
     Write-Host '     1) patch  corrección de errores'
     Write-Host '     2) minor  función nueva compatible'
     Write-Host '     3) major  cambio que rompe compatibilidad (API, formato de datos)'
+    Write-Host "     4) sin cambio de versión: generar o regenerar el paquete de la versión actual ($versionActual)"
     while ($true) {
-        switch ((Read-Host '  Elige 1, 2 o 3').Trim()) {
+        switch ((Read-Host '  Elige 1, 2, 3 o 4').Trim()) {
             '1' { return 'patch' }
             '2' { return 'minor' }
             '3' { return 'major' }
+            '4' { return 'regenerar' }
         }
     }
 }
@@ -329,17 +335,10 @@ function Elegir-Tipo {
 function Elegir-Modo {
     if ($Modo) { return $Modo }
 
-    Write-Host '  ¿Cómo se publicará?'
-    Write-Host '     1) paquete  ZIP en partes de 9 MiB (hosting sin SSH, como InfinityFree)'
-    Write-Host '     2) git      rama de producción para "git pull" en el servidor (hosting con SSH)'
-    Write-Host '     3) ambos'
-    while ($true) {
-        switch ((Read-Host '  Elige 1, 2 o 3').Trim()) {
-            '1' { return 'paquete' }
-            '2' { return 'git' }
-            '3' { return 'ambos' }
-        }
-    }
+    Write-Host '  Se publicará con ambos: rama de producción (git pull) y paquete ZIP firmado en partes de 9 MiB.'
+    Write-Host '  (Para uno solo: -Modo git o -Modo paquete.)'
+
+    return 'ambos'
 }
 
 function Construir-SeccionCambios([string]$Version, [string]$EtiquetaAnterior) {
@@ -407,7 +406,7 @@ function Actualizar-Changelog([string]$Seccion) {
 # ---------------------------------------------------------------------------------------------------------------
 # 5, 6 y 7. Commit, paquete y rama de producción
 # ---------------------------------------------------------------------------------------------------------------
-function Crear-Paquete([string]$Version, [string]$Etiqueta, [string]$Anterior, [string]$Commit) {
+function Crear-Paquete([string]$Version, [string]$Etiqueta, [string]$Anterior, [string]$Commit, [int]$Build = 1) {
     Titulo '6. Paquete firmado'
 
     $staging = Join-Path $env:TEMP "proy03-staging-$Version"
@@ -431,7 +430,7 @@ function Crear-Paquete([string]$Version, [string]$Etiqueta, [string]$Anterior, [
         Copy-Item $assets (Join-Path $staging 'public\build') -Recurse -Force
         Ok 'Assets compilados incluidos'
 
-        $argumentos = @('artisan', 'release:package', $Version, "--source=$staging", "--output=$salida", "--commit=$Commit")
+        $argumentos = @('artisan', 'release:package', $Version, "--source=$staging", "--output=$salida", "--commit=$Commit", "--build=$Build")
         if ($Anterior) { $argumentos += "--previous=$Anterior" }
         # La contraseña de la clave solo existe en el entorno de este proceso mientras se firma.
         if ($script:ContrasenaFirma) { $env:RELEASE_KEY_PASSPHRASE = $script:ContrasenaFirma }
@@ -443,9 +442,9 @@ function Crear-Paquete([string]$Version, [string]$Etiqueta, [string]$Anterior, [
         Ejecutar 'php artisan release:verify (segunda verificación independiente)' { php artisan release:verify $carpeta }
 
         $manifiesto = Get-Content (Join-Path $carpeta 'manifest.json') -Raw | ConvertFrom-Json
-        Add-Content -Path (Join-Path $salida 'historial.log') -Value ("{0}  v{1}  commit {2}  {3} parte(s)  sha256 {4}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Version, $Commit, $manifiesto.parts.Count, $manifiesto.package.sha256)
+        Add-Content -Path (Join-Path $salida 'historial.log') -Value ("{0}  v{1}  build {2}  commit {3}  {4} parte(s)  sha256 {5}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Version, $Build, $Commit, $manifiesto.parts.Count, $manifiesto.package.sha256)
 
-        $Resumen.Add("OK     Paquete firmado: releases\v$Version ($($manifiesto.parts.Count) parte(s))")
+        $Resumen.Add("OK     Paquete firmado: releases\v$Version, build $Build ($($manifiesto.parts.Count) parte(s))")
         return $carpeta
     } finally {
         foreach ($ruta in @($staging, $zip)) { if (Test-Path $ruta) { Remove-Item $ruta -Recurse -Force -ErrorAction SilentlyContinue } }
@@ -505,6 +504,87 @@ function Publicar-RamaProduccion([string]$Version, [string]$Etiqueta) {
 }
 
 # ---------------------------------------------------------------------------------------------------------------
+# Regenerar la versión actual (sin incrementar)
+# ---------------------------------------------------------------------------------------------------------------
+function Regenerar-Release([string]$Version) {
+    Titulo "Regenerar la versión $Version (sin cambiar el número)"
+
+    $etiqueta = "v$Version"
+    $etiquetaNueva = $false
+    git rev-parse -q --verify "refs/tags/$etiqueta" *> $null
+    if ($LASTEXITCODE -ne 0) {
+        $commitHead = Salida { git rev-parse --short HEAD }
+        Aviso "La etiqueta $etiqueta no existe: es la primera vez que se genera esta versión."
+        Write-Host "  Se creará en el commit actual ($commitHead), que ya trae VERSION $Version."
+        if (-not (Select-String -Path (Join-Path $Raiz 'CHANGELOG.md') -Pattern ([regex]::Escape("## [$Version]")) -Quiet)) {
+            Aviso "CHANGELOG.md no tiene una sección para $Version."
+        }
+        if (-not (Confirmar "¿Crear la etiqueta $etiqueta en el commit $commitHead?" $true)) { Detener 'Cancelado: no se cambió nada.' }
+        Ejecutar "git tag $etiqueta" { git tag -a $etiqueta -m "Versión $Version" }
+        $etiquetaNueva = $true
+    }
+
+    $commitEtiqueta = Salida { git rev-parse --short "$etiqueta^{commit}" }
+    $commitActual = Salida { git rev-parse --short HEAD }
+    if ($commitEtiqueta -ne $commitActual) {
+        Aviso "Hay commits posteriores a $etiqueta ($commitEtiqueta); HEAD está en $commitActual."
+        Write-Host '  El paquete se arma con el código de la etiqueta, así que esos commits no se incluyen.'
+        Write-Host '  Para publicarlos elige patch, minor o major.'
+        if (-not (Confirmar '¿Regenerar igualmente el paquete de la etiqueta?' $false)) { Detener 'Cancelado: no se cambió nada.' }
+    }
+
+    $anterior = Salida { git describe --tags --abbrev=0 --match 'v*' "$etiqueta^" 2>$null }
+    $anterior = if ($anterior) { $anterior.TrimStart('v') } else { $null }
+
+    $carpeta = Join-Path (Join-Path $Raiz 'releases') $etiqueta
+    $respaldo = $null
+
+    if (Test-Path $carpeta) {
+        $respaldo = "$carpeta.anterior-" + (Get-Date -Format 'yyyyMMdd-HHmmss')
+        Write-Host "  Ya existe releases\$etiqueta; se conservará como releases\$(Split-Path $respaldo -Leaf)."
+    }
+    if (-not (Confirmar "¿Generar de nuevo el paquete firmado de $etiqueta?" $true)) { Detener 'Cancelado: no se cambió nada.' }
+
+    $build = 1
+    if ($respaldo) {
+        $manifiestoAnterior = Join-Path $carpeta 'manifest.json'
+        if (Test-Path $manifiestoAnterior) {
+            $datos = Get-Content $manifiestoAnterior -Raw | ConvertFrom-Json
+            $buildAnterior = if ($datos.build) { [int]$datos.build } else { 1 }
+            $build = $buildAnterior + 1
+        }
+        Rename-Item -Path $carpeta -NewName (Split-Path $respaldo -Leaf)
+    }
+    Write-Host "  Número de build del paquete nuevo: $build"
+
+    try {
+        $nueva = Crear-Paquete $Version $etiqueta $anterior $commitEtiqueta $build
+    } catch {
+        if ($etiquetaNueva) {
+            git tag -d $etiqueta *> $null
+            Aviso "Se eliminó la etiqueta $etiqueta recién creada para poder volver a intentarlo."
+        }
+        if (Test-Path $carpeta) { Remove-Item $carpeta -Recurse -Force -ErrorAction SilentlyContinue }
+        if ($respaldo -and (Test-Path $respaldo)) {
+            Rename-Item -Path $respaldo -NewName (Split-Path $carpeta -Leaf)
+            Aviso "La regeneración falló: se restauró releases\$etiqueta tal como estaba."
+        }
+        throw
+    }
+
+    Titulo 'Resumen'
+    $Resumen | ForEach-Object { Write-Host "  $_" }
+    if ($respaldo) { Write-Host "  OK     Paquete anterior conservado en releases\$(Split-Path $respaldo -Leaf)" }
+    Write-Host ''
+    Write-Host "Paquete de $etiqueta regenerado (misma versión, mismo código)." -ForegroundColor Green
+    Write-Host "  Sube el contenido de: $nueva"
+    Write-Host '  (todas las partes .001, .002, ... más manifest.json y manifest.json.sig).'
+    if ($etiquetaNueva) {
+        Write-Host "  La etiqueta $etiqueta es solo local: para subirla, git push $Remoto $etiqueta"
+    }
+}
+
+# ---------------------------------------------------------------------------------------------------------------
 # Programa principal
 # ---------------------------------------------------------------------------------------------------------------
 $commitCreado = $null
@@ -526,9 +606,15 @@ try {
     Probar-ClaveFirma
     Ejecutar-Verificaciones
 
-    Titulo '3. Versión'
     $versionActual = (Get-Content (Join-Path $Raiz 'VERSION') -Raw).Trim()
+    Titulo "3. Versión actual $versionActual"
     $tipoElegido = Elegir-Tipo
+
+    if ($tipoElegido -eq 'regenerar') {
+        Regenerar-Release $versionActual
+        exit 0
+    }
+
     $modoElegido = Elegir-Modo
 
     $version = Salida { php artisan release:next $tipoElegido }

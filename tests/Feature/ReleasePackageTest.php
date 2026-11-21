@@ -166,6 +166,7 @@ describe('empaquetado', function () {
             ->and($manifest['version'])->toBe('1.2.0')
             ->and($manifest['previous_version'])->toBe('1.1.0')
             ->and($manifest['commit'])->toBe('abc1234')
+            ->and($manifest['build'])->toBe(1)
             ->and($manifest['requires_php'])->toBe('^8.3')
             ->and($manifest['migrations'])->toBe(['2026_01_01_000000_crear_algo.php'])
             ->and(array_sum(array_column($manifest['parts'], 'size')))->toBe($manifest['package']['size'])
@@ -177,6 +178,19 @@ describe('empaquetado', function () {
         foreach ($manifest['parts'] as $part) {
             expect(filesize($directory.'/'.$part['file']))->toBe($part['size']);
         }
+    });
+
+    it('registra el número de build y lo exige mayor o igual que 1', function () {
+        $keys = releaseKeys();
+        $source = releaseSource($this->tmp, '1.2.0');
+        $builder = app(BuildReleasePackage::class);
+
+        $manifest = $builder->handle($source, $this->tmp.'/releases', '1.2.0', $keys['secret'], 2048, build: 3);
+
+        expect($manifest['build'])->toBe(3)
+            ->and(json_decode(file_get_contents($this->tmp.'/releases/v1.2.0/manifest.json'), true)['build'])->toBe(3)
+            ->and(fn () => $builder->handle($source, $this->tmp.'/otra-salida', '1.2.0', $keys['secret'], 2048, build: 0))
+            ->toThrow(InvalidArgumentException::class, 'build');
     });
 
     it('lleva el código y la compilación, pero nunca secretos, datos del servidor ni caché', function () {
