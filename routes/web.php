@@ -10,6 +10,7 @@ use App\Http\Controllers\ClassificationController;
 use App\Http\Controllers\ClassificationLookupController;
 use App\Http\Controllers\ClassificationRecentController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\HealthController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\ProductCodeController;
 use App\Http\Controllers\ProductController;
@@ -24,6 +25,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 })->name('home');
+
+// Salud para monitoreo y despliegues: público, solo dice ok/error; la versión exige el token de HEALTH_TOKEN.
+Route::get('health', HealthController::class)->middleware('throttle:health')->name('health');
 
 // Catálogo público para visitantes: sin sesión, solo productos activos y sin datos internos.
 Route::prefix('invitado/catalogo')->middleware('throttle:catalog')->name('catalog.')->group(function () {

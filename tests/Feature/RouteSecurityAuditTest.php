@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Route;
 /** Rutas públicas a propósito: formularios de acceso, catálogo para visitantes y archivos que el navegador descarga. */
 const PUBLIC_ROUTES = [
     'home', 'login', 'login.store', 'register', 'register.store', 'password.request', 'password.email',
-    'password.reset', 'password.store', 'catalog.index', 'catalog.show', 'avatars.show', 'products.media.file', 'api.login',
+    'password.reset', 'password.store', 'catalog.index', 'catalog.show', 'avatars.show', 'products.media.file', 'api.login', 'health',
 ];
 
 /** Rutas para cualquier persona con sesión (sin permiso concreto): su propio perfil, su sesión y su token. */

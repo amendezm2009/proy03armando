@@ -39,4 +39,7 @@ return [
     // Búsqueda de clasificaciones del selector (se consulta mientras se escribe), por IP.
     'lookup' => (int) env('LOOKUP_REQUESTS_PER_MINUTE', 120),
 
+    // Comprobación de salud /health (monitoreo y scripts de despliegue), por IP.
+    'health' => (int) env('HEALTH_REQUESTS_PER_MINUTE', 30),
+
 ];
