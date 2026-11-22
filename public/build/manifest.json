@@ -1,0 +1,52 @@
+{
+  "node_modules/bootstrap-icons/font/fonts/bootstrap-icons.woff": {
+    "file": "assets/bootstrap-icons-BHUGvtHM.woff",
+    "src": "node_modules/bootstrap-icons/font/fonts/bootstrap-icons.woff"
+  },
+  "node_modules/bootstrap-icons/font/fonts/bootstrap-icons.woff2": {
+    "file": "assets/bootstrap-icons-DJdhg9lH.woff2",
+    "src": "node_modules/bootstrap-icons/font/fonts/bootstrap-icons.woff2"
+  },
+  "resources/css/app.css": {
+    "file": "assets/app-DpR1LJBm.css",
+    "name": "app",
+    "names": [
+      "app.css"
+    ],
+    "src": "resources/css/app.css",
+    "isEntry": true,
+    "assets": [
+      "assets/bootstrap-icons-DJdhg9lH.woff2",
+      "assets/bootstrap-icons-BHUGvtHM.woff"
+    ]
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-D_d7yFh2.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true,
+    "dynamicImports": [
+      "resources/js/avatar-editor.js",
+      "resources/js/classification-picker.js",
+      "resources/js/updates.js"
+    ]
+  },
+  "resources/js/avatar-editor.js": {
+    "file": "assets/avatar-editor-hl2PPCNk.js",
+    "name": "avatar-editor",
+    "src": "resources/js/avatar-editor.js",
+    "isDynamicEntry": true
+  },
+  "resources/js/classification-picker.js": {
+    "file": "assets/classification-picker-PetQcoap.js",
+    "name": "classification-picker",
+    "src": "resources/js/classification-picker.js",
+    "isDynamicEntry": true
+  },
+  "resources/js/updates.js": {
+    "file": "assets/updates-CXXB2WA8.js",
+    "name": "updates",
+    "src": "resources/js/updates.js",
+    "isDynamicEntry": true
+  }
+}
