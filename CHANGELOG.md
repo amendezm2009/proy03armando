@@ -2,6 +2,11 @@
 
 Todos los cambios relevantes de la aplicación. Formato basado en Keep a Changelog; las versiones siguen SemVer (MAYOR.MENOR.PARCHE).
 
+## [1.0.2] - 2026-11-21
+
+### Añadido
+- Se realiza el upload de la rama de forma automática despues de publicar
+
 ## [1.0.1] - 2026-11-21
 
 ### Añadido

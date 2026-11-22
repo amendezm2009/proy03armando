@@ -13,6 +13,8 @@
          trozos de 9 MiB, con manifest.json firmado (php artisan release:package) y verificado dos veces.
       7. Rama de producción (opcional): fusiona la etiqueta en la rama "production" con los assets compilados, para
          actualizar el servidor con git pull (hosting con SSH). No sube nada sin que lo confirmes.
+      8. Subida de la rama de origen: al final hace git push -u de la rama que estaba activa al empezar (main u otra)
+         junto con la etiqueta. Nunca fuerza; si el remoto lo rechaza, no deshace nada y dice qué repetir.
 
     Resultado: releases\vX.Y.Z\ (partes del ZIP, manifest.json, manifest.json.sig) y una línea en releases\historial.log.
 
@@ -33,7 +35,8 @@
     (al regenerar, solo el paquete).
 
 .PARAMETER RamaBase
-    Rama de la que se publica. Por omisión, main.
+    Rama que se espera tener activa. Por omisión, main. Si estás en otra, el script lo avisa al empezar y, si
+    aceptas, publica desde ESA rama y al final sube ESA misma rama (junto con la etiqueta), no la base.
 
 .PARAMETER RamaProduccion
     Rama que recibe cada versión para "git pull" en el servidor. Por omisión, production.
@@ -115,6 +118,8 @@ function Probar-Requisitos {
     Ok 'git, php, composer y npm disponibles'
 
     $rama = Salida { git rev-parse --abbrev-ref HEAD }
+    # La rama activa al empezar es la que se publica y la que se sube al final (no necesariamente la base).
+    $script:RamaOrigen = $rama
     if ($rama -ne $RamaBase) {
         Aviso "Estás en la rama «$rama», no en «$RamaBase»."
         if (-not (Confirmar '¿Publicar desde esta rama de todos modos?' $false)) { Detener 'Cancelado: cámbiate a la rama base.' }
@@ -547,6 +552,40 @@ function Publicar-RamaProduccion([string]$Version, [string]$Etiqueta) {
     }
 }
 
+# Sube la rama DESDE LA QUE SE PUBLICÓ (la que estaba activa al empezar, sea main u otra) junto con la etiqueta.
+# No fuerza nada: si el remoto rechaza el push, no se deshace nada local y se dice qué comando repetir.
+function Subir-RamaOrigen([string]$Etiqueta) {
+    Titulo '8. Subir la rama de origen'
+
+    $rama = $script:RamaOrigen
+    if (-not $rama -or $rama -eq 'HEAD') {
+        Aviso 'Estás en un HEAD desacoplado (sin rama): no se subió nada.'
+        $Resumen.Add("AVISO  No se subió la rama (HEAD desacoplado). Hazlo a mano: git push $Remoto <rama> $Etiqueta")
+        return
+    }
+
+    # Primero la rama y solo si sube, la etiqueta: git empuja cada referencia por separado y una etiqueta sin su commit
+    # en el remoto quedaría apuntando a algo que la rama publicada no tiene.
+    Write-Host "  > git push -u $Remoto $rama" -ForegroundColor DarkGray
+    $global:LASTEXITCODE = 0
+    git push -u $Remoto $rama | Out-Host
+    $codigo = $LASTEXITCODE
+
+    if ($codigo -eq 0) {
+        Write-Host "  > git push $Remoto $Etiqueta" -ForegroundColor DarkGray
+        git push $Remoto $Etiqueta | Out-Host
+        $codigo = $LASTEXITCODE
+    }
+
+    if ($codigo -eq 0) {
+        Ok "Rama $rama y etiqueta $Etiqueta subidas a $Remoto"
+        $Resumen.Add("OK     Rama $rama y etiqueta $Etiqueta subidas a $Remoto")
+    } else {
+        Fallo "No se pudo subir la rama $rama o la etiqueta $Etiqueta (código $codigo). Si el remoto tiene commits que no tienes: git pull --rebase $Remoto $rama"
+        $Resumen.Add("AVISO  La rama $rama NO se subió completa. Repite: git push -u $Remoto $rama; git push $Remoto $Etiqueta")
+    }
+}
+
 # ---------------------------------------------------------------------------------------------------------------
 # Regenerar la versión actual (sin incrementar)
 # ---------------------------------------------------------------------------------------------------------------
@@ -621,10 +660,20 @@ function Regenerar-Release([string]$Version) {
     if ($respaldo) { Write-Host "  OK     Paquete anterior conservado en releases\$(Split-Path $respaldo -Leaf)" }
     Write-Host ''
     Write-Host "Paquete de $etiqueta regenerado (misma versión, mismo código)." -ForegroundColor Green
-    Write-Host "  Sube el contenido de: $nueva"
-    Write-Host '  (todas las partes .001, .002, ... más manifest.json y manifest.json.sig).'
+    Write-Host ''
+    Write-Host '  Hosting sin SSH (p. ej. InfinityFree):'
+    Write-Host "     - Si la aplicación YA está instalada: en /admin/actualizaciones sube el contenido de $nueva"
+    Write-Host '       (todas las partes .001, .002, ... más manifest.json y manifest.json.sig).'
+    Write-Host '     - Si es la PRIMERA instalación (aún no hay nada en el hosting), prepara el sitio, el .env y la base de datos con:'
+    Write-Host "         .\scripts\preparar-primera-instalacion.ps1 -Version $Version" -ForegroundColor Yellow
+    Write-Host '       y sigue el LEEME.txt que deja en releases\instalar-v' -NoNewline
+    Write-Host "$Version\."
     if ($etiquetaNueva) {
-        Write-Host "  La etiqueta $etiqueta es solo local: para subirla, git push $Remoto $etiqueta"
+        Write-Host "  > git push $Remoto $etiqueta" -ForegroundColor DarkGray
+        $global:LASTEXITCODE = 0
+        git push $Remoto $etiqueta | Out-Host
+        if ($LASTEXITCODE -eq 0) { Ok "Etiqueta $etiqueta subida a $Remoto" }
+        else { Aviso "No se pudo subir la etiqueta $etiqueta. Repite: git push $Remoto $etiqueta" }
     }
 }
 
@@ -710,17 +759,25 @@ try {
         Publicar-RamaProduccion $version $etiqueta
     }
 
+    Subir-RamaOrigen $etiqueta
+
     Titulo 'Resumen'
     $Resumen | ForEach-Object { Write-Host "  $_" }
 
     Write-Host ''
     Write-Host "Versión $version lista." -ForegroundColor Green
     if ($carpetaPaquete) {
-        Write-Host "  Para el hosting sin SSH, sube el contenido de: $carpetaPaquete"
-        Write-Host '  (todas las partes .001, .002, ... más manifest.json y manifest.json.sig).'
+        Write-Host ''
+        Write-Host '  Hosting sin SSH (p. ej. InfinityFree):'
+        Write-Host "     - Si la aplicación YA está instalada: en /admin/actualizaciones sube el contenido de $carpetaPaquete"
+        Write-Host '       (todas las partes .001, .002, ... más manifest.json y manifest.json.sig).'
+        Write-Host '     - Si es la PRIMERA instalación (aún no hay nada en el hosting), prepara el sitio, el .env y la base de datos con:'
+        Write-Host "         .\scripts\preparar-primera-instalacion.ps1 -Version $version" -ForegroundColor Yellow
+        Write-Host '       y sigue el LEEME.txt que deja en releases\instalar-v' -NoNewline
+        Write-Host "$version\."
+        Write-Host ''
     }
     Write-Host '  Después de instalarla comprueba /health con la cabecera X-Health-Token y ejecuta php artisan security:check --strict en el servidor.'
-    Write-Host "  No olvides subir la rama $RamaBase si todavía no lo hiciste: git push $Remoto $RamaBase"
     exit 0
 } catch {
     Write-Host ''
