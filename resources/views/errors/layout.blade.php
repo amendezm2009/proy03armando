@@ -14,6 +14,7 @@
         <div class="display-1 fw-bold text-primary">@yield('code')</div>
         <h1 class="h4 mb-2">@yield('title')</h1>
         <p class="text-muted mb-4">@yield('message')</p>
+        @yield('extra')
         <a href="{{ url('/') }}" class="btn btn-primary">
             <i class="bi bi-house me-1"></i> Volver al inicio
         </a>

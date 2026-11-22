@@ -23,7 +23,7 @@
     </style>
 </head>
 
-<body class="bg-light d-flex flex-column min-vh-100">
+<body class="bg-light d-flex flex-column min-vh-100" data-authenticated="{{ auth()->check() ? 'true' : 'false' }}">
     <!-- Navbar Principal -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm">
         <div class="container-fluid px-4">
@@ -38,19 +38,61 @@
 
             <div class="collapse navbar-collapse" id="navbarMain">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('catalog.*') ? 'active fw-semibold' : '' }}"
+                            href="{{ route('catalog.index') }}">
+                            <i class="bi bi-shop me-1"></i> Catálogo
+                        </a>
+                    </li>
                     @auth
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('classifications.*') ? 'active fw-semibold' : '' }}"
-                                href="{{ route('classifications.index') }}">
-                                <i class="bi bi-tags me-1"></i> Clasificaciones
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-white-50" href="#" tabindex="-1" aria-disabled="true">
-                                <i class="bi bi-boxes me-1"></i> Productos <span
-                                    class="badge bg-secondary ms-1">Próx.</span>
-                            </a>
-                        </li>
+                        @if (auth()->user()->homeRoute() !== 'home')
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('admin.dashboard', 'client.dashboard') ? 'active fw-semibold' : '' }}"
+                                    href="{{ route(auth()->user()->homeRoute()) }}">
+                                    <i class="bi bi-speedometer2 me-1"></i> Mi panel
+                                </a>
+                            </li>
+                        @endif
+                        @can(App\PermissionName::ViewClassifications->value)
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('classifications.*') ? 'active fw-semibold' : '' }}"
+                                    href="{{ route('classifications.index') }}">
+                                    <i class="bi bi-tags me-1"></i> Clasificaciones
+                                </a>
+                            </li>
+                        @endcan
+                        @can(App\PermissionName::ViewUsers->value)
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('users.*') ? 'active fw-semibold' : '' }}"
+                                    href="{{ route('users.index') }}">
+                                    <i class="bi bi-people me-1"></i> Usuarios
+                                </a>
+                            </li>
+                        @endcan
+                        @can(App\PermissionName::ViewSecurityReport->value)
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('security.*') ? 'active fw-semibold' : '' }}"
+                                    href="{{ route('security.report') }}">
+                                    <i class="bi bi-shield-lock me-1"></i> Seguridad
+                                </a>
+                            </li>
+                        @endcan
+                        @can(App\PermissionName::ManageUpdates->value)
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('updates.*') ? 'active fw-semibold' : '' }}"
+                                    href="{{ route('updates.index') }}">
+                                    <i class="bi bi-cloud-arrow-up me-1"></i> Actualizaciones
+                                </a>
+                            </li>
+                        @endcan
+                        @can(App\PermissionName::ViewProducts->value)
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('products.*') ? 'active fw-semibold' : '' }}"
+                                    href="{{ route('products.index') }}">
+                                    <i class="bi bi-boxes me-1"></i> Productos
+                                </a>
+                            </li>
+                        @endcan
                     @endauth
                 </ul>
 
@@ -58,13 +100,22 @@
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="userMenu"
                             role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-person-circle fs-5"></i>
+                            @auth
+                                <x-avatar :user="auth()->user()" :size="30" />
+                            @else
+                                <i class="bi bi-person-circle fs-5"></i>
+                            @endauth
                             <span>{{ auth()->user()?->name ?? 'Invitado' }}</span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="userMenu">
                             @auth
                                 <li>
                                     <h6 class="dropdown-header">{{ auth()->user()->email }}</h6>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ route('profile.edit') }}">
+                                        <i class="bi bi-person-gear me-2 text-primary"></i>Mi perfil
+                                    </a>
                                 </li>
                                 <li>
                                     <form method="POST" action="{{ route('logout') }}">
@@ -95,6 +146,20 @@
     <!-- Contenido Principal -->
     <main class="py-4 flex-grow-1">
         <div class="container-fluid px-4">
+            <!-- Aviso a administradores: el público ve "mantenimiento" mientras la configuración tenga errores graves -->
+            @if(!empty($publicBlocked))
+                <div class="alert alert-warning shadow-sm border-0 d-flex align-items-center" role="alert">
+                    <i class="bi bi-cone-striped fs-5 me-2"></i>
+                    <div>
+                        El público y los clientes ven la página de <strong>mantenimiento</strong> porque la configuración de producción
+                        tiene errores graves. Tú puedes entrar para corregirlos y probar el sitio; cuando ya no haya errores, se abre solo.
+                        @can(App\PermissionName::ViewSecurityReport->value)
+                            <a href="{{ route('security.report') }}" class="alert-link">Ver el informe de seguridad</a>.
+                        @endcan
+                    </div>
+                </div>
+            @endif
+
             <!-- Alertas del Sistema -->
             @if(session('success'))
                 <div class="alert alert-success alert-dismissible fade show shadow-sm border-0 d-flex align-items-center"

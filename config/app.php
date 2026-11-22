@@ -30,6 +30,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Versión de la aplicación
+    |--------------------------------------------------------------------------
+    |
+    | Se lee del archivo VERSION de la raíz (MAYOR.MENOR.PARCHE). Lo actualiza scripts/release.ps1 al preparar una
+    | versión; no se edita a mano ni se pone en el .env.
+    |
+    */
+
+    'version' => is_file(base_path('VERSION')) ? trim((string) file_get_contents(base_path('VERSION'))) : '0.0.0',
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Debug Mode
     |--------------------------------------------------------------------------
     |

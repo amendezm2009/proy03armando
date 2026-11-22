@@ -7,6 +7,10 @@
 // });
 
 use App\Models\Classification;
+use App\RoleName;
+use Laravel\Sanctum\Sanctum;
+
+beforeEach(fn () => Sanctum::actingAs(userWithRole(RoleName::Admin)));
 
 describe('listado', function () {
     it('devuelve 200 con una lista paginada', function () {

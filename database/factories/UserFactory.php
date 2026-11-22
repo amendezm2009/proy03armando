@@ -34,6 +34,27 @@ class UserFactory extends Factory
     }
 
     /**
+     * Cuenta creada por un administrador cuya persona aún no define su contraseña.
+     */
+    public function invited(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'invited_at' => now(),
+            'invitation_accepted_at' => null,
+        ]);
+    }
+
+    /**
+     * Cuenta desactivada: no puede iniciar sesión.
+     */
+    public function inactive(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_active' => false,
+        ]);
+    }
+
+    /**
      * Indicate that the model's email address should be unverified.
      */
     public function unverified(): static

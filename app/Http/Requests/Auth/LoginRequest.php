@@ -2,6 +2,9 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Actions\RecordSecurityEvent;
+use App\Models\User;
+use Closure;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
@@ -30,14 +33,53 @@ class LoginRequest extends FormRequest
     }
 
     /**
+     * Credenciales aceptadas: correo y contraseña de una cuenta activa. Una cuenta desactivada recibe
+     * el mismo mensaje que una contraseña incorrecta, para no revelar que existe.
+     *
+     * @return array<string, mixed>
+     */
+    private function credentials(): array
+    {
+        return [...$this->only('email', 'password'), 'is_active' => true];
+    }
+
+    /**
+     * Inicia la sesión web.
+     *
      * @throws ValidationException
      */
     public function authenticate(): void
     {
+        $this->attempt(fn (): bool => Auth::attempt($this->credentials(), $this->boolean('remember')));
+    }
+
+    /**
+     * Comprueba las credenciales sin iniciar sesión (API con token).
+     *
+     * @throws ValidationException
+     */
+    public function validatedUser(): User
+    {
+        $this->attempt(fn (): bool => Auth::validate($this->credentials()));
+
+        return User::where('email', $this->string('email')->value())->firstOrFail();
+    }
+
+    /**
+     * @param  Closure(): bool  $credentialsAreValid
+     *
+     * @throws ValidationException
+     */
+    private function attempt(Closure $credentialsAreValid): void
+    {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        if (! $credentialsAreValid()) {
             RateLimiter::hit($this->throttleKey());
+
+            app(RecordSecurityEvent::class)->handle('auth.login_failed', [
+                'email_hash' => RecordSecurityEvent::fingerprint($this->string('email')->value()),
+            ], $this);
 
             throw ValidationException::withMessages([
                 'email' => __('auth.failed'),
@@ -57,6 +99,10 @@ class LoginRequest extends FormRequest
         }
 
         event(new Lockout($this));
+
+        app(RecordSecurityEvent::class)->handle('auth.lockout', [
+            'email_hash' => RecordSecurityEvent::fingerprint($this->string('email')->value()),
+        ], $this);
 
         $seconds = RateLimiter::availableIn($this->throttleKey());
 

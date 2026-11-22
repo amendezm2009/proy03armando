@@ -1,7 +1,11 @@
 <?php
 
 use App\Models\User;
+use App\RoleName;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Support\Facades\Hash;
+
+beforeEach(fn () => $this->seed(RolesAndPermissionsSeeder::class));
 
 /**
  * @param  array<string, mixed>  $overrides
@@ -26,12 +30,13 @@ it('muestra el formulario de registro', function () {
 
 it('registra al usuario e inicia su sesión', function () {
     $this->post(route('register.store'), datosDeRegistro())
-        ->assertRedirect(route('home'));
+        ->assertRedirect(route('client.dashboard'));
 
     $user = User::where('email', 'ana@example.com')->firstOrFail();
 
     $this->assertAuthenticatedAs($user);
-    expect(Hash::check('secreto-seguro-1', $user->password))->toBeTrue();
+    expect(Hash::check('secreto-seguro-1', $user->password))->toBeTrue()
+        ->and($user->getRoleNames()->all())->toBe([RoleName::Cliente->value]);
 });
 
 it('rechaza un correo ya registrado', function () {

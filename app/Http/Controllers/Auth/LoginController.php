@@ -22,7 +22,8 @@ class LoginController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('home'));
+        // Si venía de una página protegida, vuelve a ella; si no, va al panel de su rol.
+        return redirect()->intended(route($request->user()->homeRoute()));
     }
 
     public function destroy(Request $request): RedirectResponse

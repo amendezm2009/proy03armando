@@ -7,11 +7,11 @@
 // });
 
 use App\Models\Classification;
+use App\RoleName;
 use Illuminate\Http\UploadedFile;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Models\User;
 
-beforeEach(fn () => $this->actingAs(User::factory()->create()));
+beforeEach(fn () => $this->actingAs(userWithRole(RoleName::Admin)));
 
 describe('listado', function () {
     it('muestra las clasificaciones existentes', function () {

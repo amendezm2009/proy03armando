@@ -13,8 +13,7 @@
             </div>
 
             <div class="mb-3">
-                <x-form.input name="password" type="password" label="Contraseña" required
-                    autocomplete="current-password" hint="Ingresa tu contraseña." />
+                <x-form.password name="password" label="Contraseña" required hint="Ingresa tu contraseña." />
             </div>
 
             <div class="form-check mb-3">
@@ -29,6 +28,7 @@
         </form>
 
         <x-slot:footer>
+            <div class="mb-1"><a href="{{ route('password.request') }}">¿Olvidaste tu contraseña?</a></div>
             ¿No tienes cuenta? <a href="{{ route('register') }}">Regístrate</a>
         </x-slot:footer>
     </x-auth.card>

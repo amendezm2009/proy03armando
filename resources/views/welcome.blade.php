@@ -15,10 +15,21 @@
                         control de accesos RBAC y exportaciones en Excel y PDF.
                     </p>
                     <div class="d-flex flex-wrap gap-2">
-                        <a href="{{ Route::has('classifications.index') ? route('classifications.index') : url('/classifications') }}"
-                            class="btn btn-primary btn-lg px-4 shadow-sm">
-                            <i class="bi bi-tags-fill me-2"></i> Ir a Clasificaciones
+                        <a href="{{ route('catalog.index') }}" class="btn btn-primary btn-lg px-4 shadow-sm">
+                            <i class="bi bi-shop me-2"></i> Ver el catálogo
                         </a>
+                        @auth
+                            @if (auth()->user()->homeRoute() !== 'home')
+                                <a href="{{ route(auth()->user()->homeRoute()) }}" class="btn btn-outline-primary btn-lg px-4">
+                                    <i class="bi bi-speedometer2 me-2"></i> Ir a mi panel
+                                </a>
+                            @endif
+                            @can(App\PermissionName::ViewClassifications->value)
+                                <a href="{{ route('classifications.index') }}" class="btn btn-outline-secondary btn-lg px-4">
+                                    <i class="bi bi-tags-fill me-2"></i> Clasificaciones
+                                </a>
+                            @endcan
+                        @endauth
                     </div>
                 </div>
             </div>
@@ -41,15 +52,3 @@
         </div>
     </div>
 @endsection
-
-@push('scripts')
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            if (typeof window.jQuery !== 'undefined') {
-                console.log('jQuery disponible');
-            } else {
-                console.error('jQuery no está disponible en window.$');
-            }
-        });
-    </script>
-@endpush

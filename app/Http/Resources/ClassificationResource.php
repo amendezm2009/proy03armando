@@ -2,11 +2,12 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Classification;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @mixin \App\Models\Classification
+ * @mixin Classification
  */
 class ClassificationResource extends JsonResource
 {

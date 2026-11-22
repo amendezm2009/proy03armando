@@ -2,6 +2,22 @@ opencollection: 1.0.0
 
 info:
   name: 2026 laravel armando
+config:
+  proxy:
+    inherit: true
+    config:
+      protocol: http
+      hostname: ""
+      port: ""
+      auth:
+        username: ""
+        password: ""
+      bypassProxy: ""
+
+request:
+  auth:
+    type: bearer
+    token: 3|MSQvLOEb4nvkwSBFvXYZ3y8pbKp42LJlKEwQRBGt2106f124
 bundled: false
 extensions:
   bruno:

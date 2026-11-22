@@ -2,6 +2,7 @@
 
 use App\Models\Classification;
 use App\Models\User;
+use App\RoleName;
 use Illuminate\Support\Arr;
 
 it('traduce al español todos los mensajes del framework', function (string $archivo) {
@@ -27,7 +28,7 @@ it('muestra en español el error de credenciales incorrectas', function () {
 it('muestra el resumen de la paginación en español', function () {
     Classification::factory()->count(11)->create();
 
-    $this->actingAs(User::factory()->create())
+    $this->actingAs(userWithRole(RoleName::Cliente))
         ->get(route('classifications.index'))
         ->assertOk()
         ->assertSee('Mostrando')

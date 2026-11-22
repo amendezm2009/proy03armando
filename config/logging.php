@@ -73,6 +73,16 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // Eventos de seguridad (accesos, bloqueos, accesos denegados). Ver App\Actions\RecordSecurityEvent.
+        // Se conservan más días que el registro general: una investigación suele mirar semanas atrás.
+        'security' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/security.log'),
+            'level' => 'info',
+            'max_files' => (int) env('SECURITY_LOG_DAYS', 90),
+            'replace_placeholders' => true,
+        ],
+
         'monthly' => [
             'driver' => 'monthly',
             'path' => storage_path('logs/laravel.log'),
