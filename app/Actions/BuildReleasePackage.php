@@ -40,7 +40,7 @@ class BuildReleasePackage
     public const FORMAT = 1;
 
     /** Carpetas de la raíz que nunca viajan en el paquete. */
-    private const EXCLUDED_ROOT_DIRECTORIES = ['.git', '.github', 'node_modules', 'tests', 'releases', 'storage'];
+    private const EXCLUDED_ROOT_DIRECTORIES = ['.git', '.github', 'node_modules', 'tests', 'releases'];
 
     /** Archivos sin los que la versión no puede arrancar. */
     private const REQUIRED_FILES = ['artisan', 'composer.json', 'VERSION', 'vendor/autoload.php', 'public/index.php'];
@@ -209,6 +209,12 @@ class BuildReleasePackage
 
         if (in_array($segments[0], [...self::EXCLUDED_ROOT_DIRECTORIES, ...(array) config('release.exclude')], true) || in_array('.git', $segments, true)) {
             return true;
+        }
+
+        // De storage/ solo viaja el esqueleto (los .gitignore que mantienen las carpetas), para que una primera
+        // instalación descomprimida tenga storage/framework/views, sessions, logs... Nunca datos ni registros.
+        if ($segments[0] === 'storage') {
+            return ! $isDirectory && $name !== '.gitignore';
         }
 
         if ($isDirectory) {

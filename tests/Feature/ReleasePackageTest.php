@@ -218,6 +218,22 @@ describe('empaquetado', function () {
             ->and($entries)->not->toContain('config/20261120-20-53-release-private.key');
     });
 
+    it('de storage/ lleva solo el esqueleto (.gitignore) para poder descomprimirlo en una primera instalación', function () {
+        $keys = releaseKeys();
+        $source = releaseSource($this->tmp);
+
+        foreach (['storage/framework/views/.gitignore' => "*\n!.gitignore\n", 'storage/logs/.gitignore' => "*\n", 'storage/app/private/.gitignore' => "*\n", 'storage/framework/views/compilada.php' => '<?php', 'storage/app/private/backups/dump.sql.gz' => 'datos', 'storage/logs/laravel-2026.log' => 'log'] as $path => $contents) {
+            File::ensureDirectoryExists(dirname($source.'/'.$path));
+            file_put_contents($source.'/'.$path, $contents);
+        }
+
+        $manifest = app(BuildReleasePackage::class)->handle($source, $this->tmp.'/releases', '1.2.0', $keys['secret'], 2048);
+        $entries = releaseEntries($this->tmp.'/releases/v1.2.0', $manifest);
+
+        expect($entries)->toContain('storage/framework/views/.gitignore', 'storage/logs/.gitignore', 'storage/app/private/.gitignore')
+            ->and($entries)->not->toContain('storage/framework/views/compilada.php', 'storage/app/private/backups/dump.sql.gz', 'storage/logs/laravel-2026.log', 'storage/app/public/foto.jpg');
+    });
+
     it('deja fuera las herramientas de desarrollo de la raíz (config release.exclude) y lleva el resto', function () {
         $keys = releaseKeys();
         $source = releaseSource($this->tmp);

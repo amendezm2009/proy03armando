@@ -71,8 +71,18 @@ class BackupDatabase
             $write("-- Respaldo de la base de datos\n-- format: ".self::FORMAT."\n-- driver: {$driver}\n-- app_version: ".config('app.version')."\n-- created_at: ".gmdate('c')."\n\n");
             $write($driver === 'sqlite' ? "PRAGMA foreign_keys=OFF;\n\n" : "SET NAMES utf8mb4;\nSET FOREIGN_KEY_CHECKS=0;\n\n");
 
-            foreach (Schema::connection($connection)->getTables() as $table) {
+            // En MySQL, getTables() sin esquema devuelve las tablas de TODAS las bases del servidor: se limita a la actual.
+            $schema = $driver === 'sqlite' ? null : $db->getDatabaseName();
+            $names = [];
+
+            foreach (Schema::connection($connection)->getTables($schema) as $table) {
                 $name = (string) $table['name'];
+
+                if (isset($names[$name])) {
+                    continue;
+                }
+
+                $names[$name] = true;
                 $wrapped = $grammar->wrapTable($name);
                 $withData = ! in_array($name, $excluded, true);
                 $rows = 0;
