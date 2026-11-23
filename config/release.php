@@ -81,7 +81,7 @@ return [
         '.agents', '.claude', '.cursor', '.idea', '.vscode', '.zed', '.nova',
         '.mcp.json', 'boost.json', 'CLAUDE.md', 'AGENTS.md',
         'package.json', 'package-lock.json', 'vite.config.js', '.npmrc', 'phpunit.xml', '.editorconfig',
-        '2026 laravel armando',
+        '2026 laravel armando', 'previews',
     ],
 
     /*
