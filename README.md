@@ -1,6 +1,43 @@
-# Sistema de Gestión de Productos y sus clasificaciones
+# 🎖️ Aplicación web para la gestión de productos
 
-Proyecto desarrollado con **Laravel 13**, **MySQL**, **Bootstrap 5**, **jQuery**, **DataTables** y estándares de seguridad **OWASP**.
+* Incluye la gestión de Productos y sus clasificaciones.
+* Gestión de usuarios, login, registro y reenvío de correo, con dashboards y permisos epecíficos para los roles: invitado, cliente y admin.
+* Test por cada funcionalidad desarrollada incluyendo **OWASP Top 10**.
+* Scripts para incremento de versiones **semver (vX.Y.Z)** y Herramientas para validación de variables de ambiente 
+  ***Herramientas para despliegue, Ojo. Falta realizar pruebas y pulir el mecanismo***
+* Scripts para preparar releases en el **entorno de Desarrollo** (generando archivos a subir en el **entorno de producción**, y commits en la rama **production**)
+* Scripts y herramientas para subir la webapp (nueva o actualizaciones) en el **entorno de Producción** con y sin acceso SSH.
+---
+
+## 📸 Vista previa de algunos screen de la aplicación
+
+> 💡 Haz clic en una miniatura para ver la captura completa en una nueva pestaña. Presiona Ctrl+F4 para cerrarla y regresar.
+
+<table>
+<tr>
+<td align="center" valign="top"><sub>🌐 Invitado: inicio</sub><br><a href="previews/0-invitado-index.png"><img src="previews/0-invitado-index.png" width="100" alt="Página de inicio para invitados"></a></td>
+<td align="center" valign="top"><sub>🌐 Invitado: catálogo</sub><br><a href="previews/0-invitado-ver-catalogo.png"><img src="previews/0-invitado-ver-catalogo.png" width="100" alt="Catálogo visto por un invitado"></a></td>
+<td align="center" valign="top"><sub>🛒 Cliente: dashboard</sub><br><a href="previews/cliente-dashboard.png"><img src="previews/cliente-dashboard.png" width="100" alt="Dashboard del cliente"></a></td>
+<td align="center" valign="top"><sub>🛒 Cliente: productos</sub><br><a href="previews/cliente-productos-index.png"><img src="previews/cliente-productos-index.png" width="100" alt="Listado de productos del cliente"></a></td>
+<td align="center" valign="top"><sub>🛒 Cliente: detalle de producto</sub><br><a href="previews/cliente-productos-ver-fotos-videos.png"><img src="previews/cliente-productos-ver-fotos-videos.png" width="100" alt="Detalle de un producto con fotos y videos"></a></td>
+<td align="center" valign="top"><sub>🛒 Cliente: clasificaciones</sub><br><a href="previews/cliente-ver-clasificaciones.png"><img src="previews/cliente-ver-clasificaciones.png" width="100" alt="Clasificaciones vistas por el cliente"></a></td>
+</tr>
+<tr>
+<td align="center" valign="top"><sub>👤 Editar perfil</sub><br><a href="previews/editar-perfil.png"><img src="previews/editar-perfil.png" width="100" alt="Edición del perfil"></a></td>
+<td align="center" valign="top"><sub>👑 Admin: dashboard</sub><br><a href="previews/admin-1-dashboard.png"><img src="previews/admin-1-dashboard.png" width="100" alt="Dashboard del administrador"></a></td>
+<td align="center" valign="top"><sub>👑 Admin: clasificaciones (50 mil)</sub><br><a href="previews/admin-2-clasificaciones-50k.png"><img src="previews/admin-2-clasificaciones-50k.png" width="100" alt="Clasificaciones con 50 mil registros"></a></td>
+<td align="center" valign="top"><sub>👑 Admin: productos con fotos y videos</sub><br><a href="previews/admin-3-productos-fotos-y-videos.png"><img src="previews/admin-3-productos-fotos-y-videos.png" width="100" alt="Productos con fotos y videos"></a></td>
+<td align="center" valign="top"><sub>👑 Admin: seguridad del .env</sub><br><a href="previews/admin-4-env-seguro-y-completo.png"><img src="previews/admin-4-env-seguro-y-completo.png" width="100" alt="Revisión de seguridad del archivo .env"></a></td>
+<td align="center" valign="top"><sub>🔌 APIs protegidas por rol y token</sub><br><a href="previews/z-apis-protegidas-por-rol-y-token.png"><img src="previews/z-apis-protegidas-por-rol-y-token.png" width="100" alt="APIs protegidas por rol y token"></a></td>
+</tr>
+<tr>
+<td align="center" valign="top"><sub>⚙️ Script: primera instalación</sub><br><a href="previews/scripts-primera-instalacion.png"><img src="previews/scripts-primera-instalacion.png" width="100" alt="Script de primera instalación"></a></td>
+<td align="center" valign="top"><sub>⚙️ Script: ejecución de release.ps1</sub><br><a href="previews/scripts-release-ps1-ejecucion.png"><img src="previews/scripts-release-ps1-ejecucion.png" width="100" alt="Ejecución de release.ps1"></a></td>
+<td align="center" valign="top"><sub>⚙️ Script: pruebas de release.ps1</sub><br><a href="previews/scripts-release-ps1-tests-aplicados.png"><img src="previews/scripts-release-ps1-tests-aplicados.png" width="100" alt="Pruebas aplicadas por release.ps1"></a></td>
+<td align="center" valign="top"><sub>⚙️ Archivos de la release</sub><br><a href="previews/scripts-releases-archivos.png"><img src="previews/scripts-releases-archivos.png" width="100" alt="Archivos generados en releases"></a></td>
+<td align="center" valign="top"><sub>⚙️ Subir actualizaciones al hosting</sub><br><a href="previews/scripts-releases-subir-updates-en-hosting.png"><img src="previews/scripts-releases-subir-updates-en-hosting.png" width="100" alt="Subida de actualizaciones al hosting"></a></td>
+</tr>
+</table>
 
 ---
 
@@ -35,18 +72,26 @@ Proyecto desarrollado con **Laravel 13**, **MySQL**, **Bootstrap 5**, **jQuery**
 ## 🗺️ Plan de Acción Paso a Paso
 
 ```mermaid
-flowchart TD
-    F0[Fase 0: Configuración MySQL y Entorno] --> F1[Fase 1: Setup Frontend Vite + Bootstrap + jQuery + DataTables]
-    F1 --> F2[Fase 2: CRUD de Clasificaciones/Etiquetas + API + Excel]
-    F2 --> F3[Fase 3: Autenticación, Roles Spatie, Sanctum y Dashboards]
-    F3 --> F4[Fase 4: CRUD de Productos N:M, Multimedia, Barras y QR]
-    F4 --> F5[Fase 5: Auditoría de Seguridad OWASP Top 10 y Cierre]
-    F5 --> F6[Fase 6: Versionado, Paquetes Firmados y Despliegue]
+flowchart TB
+    subgraph R1["Fases 0 a 3"]
+        direction LR
+        F0["Fase 0<br/>MySQL y<br/>entorno"] --> F1["Fase 1<br/>Frontend<br/>base"]
+        F1 --> F2["Fase 2<br/>CRUD de<br/>clasificaciones"]
+        F2 --> F3["Fase 3<br/>Seguridad<br/>y roles"]
+    end
+    subgraph R2["Fases 4 a 6"]
+        direction LR
+        F4["Fase 4<br/>Productos,<br/>multimedia<br/>y códigos"] --> F5["Fase 5<br/>Auditoría<br/>OWASP"]
+        F5 --> F6["Fase 6<br/>Versiones y<br/>despliegue"]
+    end
+    R1 --> R2
 ```
 
----
+> 💡 **Tip:** los títulos sombreados con un 👉➕ son secciones plegadas; haz clic en ellos para desplegarlas y otra vez para plegarlas.
 
-### Fase 0: Configuración de Base de Datos MySQL
+<details>
+<summary><code>👉➕ 🗄️ Fase 0: Configuración de Base de Datos MySQL</code></summary>
+
 - [x] Establece las variables de conexión a la base de datos en `.env`:
   ```dotenv
   DB_CONNECTION=mysql
@@ -66,9 +111,11 @@ flowchart TD
 - [x] Se prueba la conexión y migración inicial del framework.
 - [x] Idiomas: Se incluyen mensajes del framework en español en `lang/es/` (`auth`, `pagination`, `passwords`, `validation`) y `lang/es.json`; el inglés viene incluido en Laravel y es el idioma de respaldo (`APP_FALLBACK_LOCALE=en`). Los textos de las vistas se escriben solo en español. Prueba: `tests/Feature/LocalizationTest.php`.
 
----
+</details>
 
-### Fase 1: Arquitectura Frontend Base (Bootstrap 5 + jQuery + DataTables)
+<details>
+<summary><code>👉➕ 🎨 Fase 1: Arquitectura Frontend Base (Bootstrap 5 + jQuery + DataTables)</code></summary>
+
 - [x] Se instalaron dependencias vía npm:
   ```bash
   npm install bootstrap @popperjs/core jquery datatables.net-bs5 datatables.net-buttons-bs5 jszip pdfmake
@@ -82,9 +129,11 @@ flowchart TD
 - [x] Se aplicó el asterisco y la validación del cliente a los formularios existentes: clasificaciones, importación, login y registro.
 - [x] Se cuenta con componentes Blade reutilizables: `<x-form.input>` (etiqueta, campo, error y valor previo) y `<x-auth.card>` (tarjeta centrada de los formularios de acceso).
 
----
+</details>
 
-### Fase 2: CRUD de Clasificaciones / Etiquetas (Web, API y Exportación a Excel)
+<details>
+<summary><code>👉➕ 🏷️ Fase 2: CRUD de Clasificaciones / Etiquetas (Web, API y Exportación a Excel)</code></summary>
+
 - [x] **Migración y Modelo:**
   - Tabla `classifications` (`id`, `name` único, `slug` indexado, `description`, `color_badge`, `is_active`, `created_at`, `updated_at`).
   - Modelo `App\Models\Classification` con casts, fillables y factory (`ClassificationFactory`).
@@ -113,9 +162,11 @@ flowchart TD
   - Web: formulario GET con búsqueda por nombre o slug, estado (activas/inactivas) y registros por página (5, 10, 25, 50), con paginación de Laravel (Bootstrap 5) que conserva los filtros.
   - API: parámetros `?search=`, `?is_active=` y `?per_page=` (máx. 100, por defecto 15).
 
----
+</details>
 
-### Fase 3: Seguridad, Autenticación y Control de Accesos (RBAC)
+<details>
+<summary><code>👉➕ 🔐 Fase 3: Seguridad, Autenticación y Control de Accesos (RBAC)</code></summary>
+
 - [x] **Autenticación, parte A (vistas Blade propias en Bootstrap 5):**
   - Inicio de sesión (`/login`) con "recordarme" y bloqueo tras 5 intentos fallidos (`Auth\LoginRequest`), registro (`/register`, `Auth\RegisterRequest`) y cierre de sesión (`POST /logout`).
   - Rutas web de clasificaciones protegidas con el middleware `auth`; navbar según la sesión (`@auth` / `@guest`).
@@ -195,9 +246,11 @@ flowchart TD
   - Probado también en el navegador (flujo completo, zoom, vista previa, quitar foto, archivo corrupto o GIF, y la captura de un fotograma de vídeo); la cámara real no se pudo probar en el entorno de desarrollo. Pruebas: `tests/Feature/AvatarTest.php`, `tests/Feature/Api/AvatarTest.php` y `tests/Feature/AvatarComponentTest.php`.
 - [x] **Corrección del sembrado desde cero:** `RolesAndPermissionsSeeder` renueva la caché de permisos de Spatie entre crear los permisos y asignarlos; antes, `php artisan migrate:fresh --seed` fallaba en una base vacía porque `DatabaseSeeder` usa `WithoutModelEvents`. Cubierto en `tests/Feature/RolesAndPermissionsSeederTest.php`.
 
----
+</details>
 
-### Fase 4: CRUD de Productos (Relación N:M, Multimedia y Códigos)
+<details>
+<summary><code>👉➕ 📦 Fase 4: CRUD de Productos (Relación N:M, Multimedia y Códigos)</code></summary>
+
 - [x] **Etapa 1: Migraciones, modelos y CRUD** (web y API):
   - Tabla `products`: `sku` único, `name`, `slug` único e inmutable (forma parte de la URL y del futuro QR), `description`, `barcode` EAN-13 único, `stock`, `min_stock`, `purchase_price` y `sale_price` (`decimal(10,2)`), `is_active`, `created_by`/`updated_by` y baja lógica (`deleted_at`). Con respecto a lo previsto originalmente: `photo_path` se sustituye por una tabla de multimedia (etapa 2) y no hay columna `qr_code`, porque el QR se genera al vuelo con la URL del producto.
   - Pivote `classification_product` con claves foráneas en cascada, índice único `(product_id, classification_id)` y relaciones `belongsToMany` en `Product` y `Classification`.
@@ -223,9 +276,12 @@ flowchart TD
   - **Corregido en esta revisión:** (1) la API entregaba `purchase_price` al cliente; ahora solo lo ve quien tiene `products.update`, igual que la ficha web; (2) el QR usaba el dominio de la petición, ahora usa `APP_URL` (una etiqueta impresa desde `localhost` o con un `Host` falsificado ya no sale con esa dirección); (3) los archivos públicos llevan `Content-Security-Policy: default-src 'none'; sandbox`; (4) eliminar un producto queda en el log (`product.deleted`, con quien lo hizo y si fue definitivo); (5) al eliminar un producto definitivamente se borran sus archivos del disco (antes quedaban huérfanos).
   - **Comprobado sin cambios:** todo se muestra escapado (nombres, descripciones, etiquetas y nombres de archivo con `<script>` o comillas); la búsqueda y los filtros usan parámetros enlazados (probado con intentos de inyección SQL); no hay SQL ni HTML crudo en `app/`, `resources/` ni `routes/`; `slug`, autor y portada no se asignan desde la petición.
   - **Limitaciones conocidas:** quien tenga la URL de un archivo lo ve aunque el producto esté inactivo o eliminado (los nombres son aleatorios de 40 caracteres); el cliente ve por defecto solo los activos, pero puede pedir los inactivos con el filtro "Estado" (es una preferencia de vista, no un bloqueo; si debiera ser un bloqueo, basta quitar esa opción en `ProductIndexRequest::filters()`); **resueltas en la Fase 5:** la búsqueda ya trata `%` y `_` como texto literal y los 401/403 se registran en el canal `security` (A03 y A09).
----
 
-### Fase 5: Auditoría de Seguridad OWASP Top 10 y Cierre
+</details>
+
+<details>
+<summary><code>👉➕ 🛡️ Fase 5: Auditoría de Seguridad OWASP Top 10 y Cierre</code></summary>
+
 - [x] **A01: Broken Access Control:** no hay recursos que pertenezcan a una persona (los productos y las clasificaciones son del negocio), así que el control es por **rol y permiso** (Spatie) y no por propiedad; las reglas entre personas (no cambiar el propio rol, no desactivarse, no dejar al sistema sin administrador) están en `UserPolicy`. `tests/Feature/RouteSecurityAuditTest.php` recorre **todas** las rutas de la aplicación y falla si una ruta nueva no exige sesión, no exige permiso (salvo el perfil propio), no pasa por `EnsureUserIsActive` o la API no usa Sanctum; y llama a cada ruta protegida sin sesión (login o 401). Las 14 rutas públicas están declaradas a propósito en esa prueba.
 - [x] **A02: Cryptographic Failures:** contraseñas con Argon2id (`config/hashing.php`; las de bcrypt se convierten solas en el siguiente inicio de sesión web), sesión cifrada (`SESSION_ENCRYPT=true` por defecto), tokens de la API con caducidad, secretos solo en `.env` (fuera del repositorio; `.env.example` no lleva valores reales). `php artisan security:check` lo verifica.
 - [x] **A03: Injection:** consultas con parámetros enlazados (Eloquent), validación en FormRequests y escape de Blade (probado con `<script>` en nombres, descripciones y archivos). **Nuevo:** las búsquedas tratan `%` y `_` como texto literal (`whereContainsText`, `escape '!'`, igual en MySQL y SQLite) en productos, clasificaciones y usuarios. Prueba: `SearchEscapingTest`.
@@ -254,9 +310,11 @@ Para publicar: `composer install --no-dev --optimize-autoloader`, `php artisan c
 - El filtro "Estado" del cliente es una preferencia de vista, no un bloqueo: puede pedir los productos inactivos (si debiera ser un bloqueo, basta quitar esa opción en `ProductIndexRequest::filters()`).
 - Las dependencias están al día (`composer update` ejecutado el 20 de noviembre de 2026); repite la auditoría mensual indicada arriba y tras cada `composer update`.
 
----
+</details>
 
-### Fase 6: Versionado, Paquetes Firmados y Despliegue
+<details>
+<summary><code>👉➕ 🚀 Fase 6: Versionado, Paquetes Firmados y Despliegue</code></summary>
+
 
 **Etapa 1 (hecha): versiones y paquetes firmados.** Todo ocurre en el equipo de desarrollo; nada de esta etapa toca el servidor.
 
@@ -339,6 +397,87 @@ Deja en `releases\instalar-vX.Y.Z\` (`php artisan release:first-install`): **`si
 
 **Siguiente etapa posible:** integrar en `release.ps1` un modo para disparar el despliegue por SSH y comprobar `/health` al terminar.
 
+</details>
+
+---
+
+## ✅ Requisitos
+
+- **PHP 8.3 o superior**, Composer y Node.js con npm.
+- **MySQL o MariaDB** (en local, el que trae Laragon).
+- **Qué se necesita según el lugar:**
+
+| Dónde | Composer | Node.js y npm |
+|---|---|---|
+| **Tu equipo (desarrollo)** | Sí: `composer install` y las pruebas | Sí: `npm install`, `npm run dev` y `npm run build` |
+| **Hosting sin SSH** | No: el ZIP ya trae `vendor` sin dependencias de desarrollo | No: el ZIP ya trae `public/build` compilado |
+| **Servidor con SSH y `git pull`** | Sí: `deploy-servidor.sh` ejecuta `composer install --no-dev` (si no está en el `PATH`, define `COMPOSER_BIN`) | No: la rama `production` ya incluye `public/build` |
+
+Node.js solo hace falta donde se compila la aplicación, es decir, en tu equipo de desarrollo.
+
+<details>
+<summary><code>👉➕ 🧩 Extensiones de PHP (se activan en php.ini)</code></summary>
+
+| Extensión | ¿Para qué la usa la aplicación? | Obligatoria |
+|---|---|---|
+| `openssl` | Cifrado de Laravel y de la llave privada de firma | Sí |
+| `pdo_mysql` | Conexión a MySQL/MariaDB | Sí |
+| `mbstring` | Manejo de textos con acentos | Sí |
+| `ctype`, `filter`, `tokenizer`, `session` | Las exige el framework | Sí |
+| `fileinfo` | Detectar el tipo real de los archivos subidos | Sí |
+| `xml`, `dom`, `libxml`, `simplexml`, `xmlwriter`, `xmlreader` | Importar y exportar Excel | Sí |
+| `zip` | Excel (`.xlsx`) y paquetes de versión (`.zip`) | Sí |
+| `zlib` | Respaldos `.sql.gz` y lectura de archivos comprimidos | Sí |
+| `gd` | Recorte y redimensión de avatares y fotos de productos | Sí |
+| `sodium` | Firma Ed25519 de los paquetes de versión | Sí |
+| `curl` | Peticiones HTTP salientes de Laravel y Composer | Sí |
+| `iconv` | Conversión de codificaciones | Sí |
+| `intl` | Formatos y textos en español | Recomendada |
+| `exif` | Orientación correcta de fotos tomadas con el celular | Recomendada |
+| `pdo_sqlite`, `sqlite3` | Pruebas automáticas (`php artisan test`) y base temporal de la primera instalación | Solo desarrollo |
+
+Además, para subir videos de casi 10 MB ajusta estos valores en el mismo `php.ini`:
+
+```ini
+upload_max_filesize = 12M
+post_max_size = 64M
+memory_limit = 256M
+max_execution_time = 120
+```
+
+### Cómo encontrar y modificar `php.ini`
+
+1. **Descubre cuál `php.ini` usa tu PHP** (puede haber varios; solo cuenta el que PHP carga). En una terminal:
+   ```powershell
+   composer -V
+   php --ini
+   ```
+   Busca la línea **Loaded Configuration File**: esa es la ruta. Si dice `(none)`, no hay `php.ini` cargado: copia `php.ini-development` (o `php.ini-production`) de la carpeta de PHP como `php.ini`.
+2. **Comprueba que es el PHP correcto.** La terminal puede usar otro PHP distinto del de Laragon:
+   ```powershell
+   (Get-Command php).Source
+   ```
+   En Laragon, además, el `php.ini` se abre desde el menú: clic derecho en la bandeja → **PHP** → **php.ini**. Si el sitio web (Apache/Nginx) y la terminal usan versiones distintas, cada una tiene su propio `php.ini`; edita el de la versión que usa cada una.
+3. **Alternativa desde el navegador:** crea un archivo temporal con `<?php phpinfo();` en la carpeta pública, ábrelo y busca **Loaded Configuration File**. Bórralo al terminar, porque expone información del servidor.
+4. **Abre `php.ini` como administrador** con tu editor (por ejemplo, Visual Studio Code) y busca cada extensión. Las que estén desactivadas aparecen con punto y coma al inicio; quítalo:
+   ```ini
+   ;extension=gd      →   extension=gd
+   ;extension=zip     →   extension=zip
+   ;extension=sodium  →   extension=sodium
+   ```
+   Las líneas de `extension=` deben quedar sin `;`. Los valores de la subida de archivos se cambian en la misma línea donde aparecen (por ejemplo `upload_max_filesize`).
+5. **Guarda y reinicia** el servidor web desde Laragon (Detener todo → Iniciar todo) y abre una terminal nueva para que lea los cambios.
+6. **Verifica que quedaron activas:**
+   ```powershell
+   php -m
+   php -r "foreach (['openssl','pdo_mysql','mbstring','fileinfo','zip','zlib','gd','sodium','curl','intl'] as $e) { echo str_pad($e, 12), extension_loaded($e) ? 'OK' : 'FALTA', PHP_EOL; }"
+   ```
+   Si una extensión dice `FALTA`, revisa que el archivo `php_<nombre>.dll` exista en la carpeta `ext` de tu PHP y que `extension_dir` en `php.ini` apunte a ella.
+
+En un hosting compartido no se edita `php.ini`: las extensiones y límites se activan desde el panel de control del hosting.
+</details>
+
+
 ---
 
 ## 🚀 Guía de Inicio Rápido (Entorno Local)
@@ -370,6 +509,122 @@ Deja en `releases\instalar-vX.Y.Z\` (`php artisan release:first-install`): **`si
    # npm run dev
    ```
 
+
+---
+
+## 🧭 Guía rápida de desarrollo y despliegue
+
+> Desarrollas y firmas en tu equipo y publicas por el camino que permita tu hosting. Esta guía resume el recorrido; el detalle de cada pieza está en la **Fase 6** del Plan de Acción.
+
+### El camino completo
+
+```mermaid
+flowchart TD
+    subgraph EQ["💻 Tu equipo"]
+        A["1 · Desarrollar<br/>y hacer commit<br/>(main u otra rama)"] --> B["2 · Publicar<br/>.\scripts\release.ps1"]
+    end
+    subgraph OUT["📦 Salidas"]
+        P["Paquete firmado<br/>releases\vX.Y.Z"]
+        R["Rama production<br/>con assets<br/>compilados"]
+    end
+    subgraph HOST["🌐 Tu hosting"]
+        Q{"¿Tiene SSH?"}
+        G["bash scripts/<br/>deploy-servidor.sh"]
+        F{"¿Primera<br/>instalación?"}
+        I["Primera instalación:<br/>.\scripts\preparar-<br/>primera-instalacion.ps1<br/>+ FTP + .env<br/>+ phpMyAdmin"]
+        W["/admin/actualizaciones<br/>subir → verificar<br/>→ instalar"]
+    end
+    B --> P
+    B --> R
+    P --> Q
+    R --> Q
+    Q -- Sí --> G
+    Q -- No --> F
+    F -- Sí --> I
+    F -- No --> W
+```
+
+| Tu hosting | Qué haces | Se ejecuta en |
+|---|---|---|
+| **Con SSH** | `bash scripts/deploy-servidor.sh` (muestra el plan y pregunta continuar o salir) | El servidor |
+| **Sin SSH, primera vez** | `.\scripts\preparar-primera-instalacion.ps1` y subir `sitio\`, el `.env` y la base por FTP/phpMyAdmin | Tu equipo → FTP |
+| **Sin SSH, ya instalado** | Subir las partes del paquete en `/admin/actualizaciones` | El navegador |
+
+> 📌 Los bloques siguientes están **plegados**: despliega solo el que necesites.
+
+<details>
+<summary><code>👉➕ ⚙️ Qué hace release.ps1, en orden</code></summary>
+
+Se detiene en el primer problema y dice qué corregir. Por omisión publica por los dos caminos (paquete y rama `production`).
+
+1. **Requisitos:** herramientas, rama, árbol limpio y clave de firma (si falta, ofrece crearla).
+2. **Verificaciones:** Pint, pruebas, auditorías de Composer y npm, y `npm run build`.
+3. **Versión:** patch, minor o major; la opción 4 regenera el paquete actual sin cambiar el número.
+4. **CHANGELOG:** arma la sección con los commits desde la etiqueta anterior; puedes editarla.
+5. **Commit y etiqueta:** `chore(release)` y `vX.Y.Z`; si algo falla después, ofrece deshacerlos.
+6. **Paquete firmado:** ZIP en partes, firma Ed25519 y doble verificación.
+7. **Rama `production`:** fusiona la etiqueta con `public/build`; sube solo si confirmas.
+8. **Subir tu rama:** sube la rama con la que empezaste y luego la etiqueta; nunca fuerza.
+
+</details>
+
+<details>
+<summary><code>👉➕ ⌨️ Comandos de bolsillo</code></summary>
+
+| Quiero | Comando | Dónde |
+|---|---|---|
+| Publicar una versión nueva | `.\scripts\release.ps1` | Tu equipo |
+| Solo comprobar que todo pasa | `.\scripts\release.ps1 -SoloVerificar` | Tu equipo |
+| Rotar la clave de firma | `.\scripts\release.ps1 -RotarClaves` | Tu equipo |
+| Comprobar un paquete antes de subirlo | `php artisan release:verify releases\vX.Y.Z` | Tu equipo |
+| Preparar la primera instalación | `.\scripts\preparar-primera-instalacion.ps1 -Version X.Y.Z` | Tu equipo |
+| Ver qué haría la actualización por git | `bash scripts/deploy-servidor.sh --dry-run` | Servidor con SSH |
+| Actualizar por git | `bash scripts/deploy-servidor.sh` | Servidor con SSH |
+| Revisar la configuración de seguridad | `php artisan security:check --strict` | Servidor con SSH; sin SSH, `/admin/seguridad` |
+| Respaldar o restaurar la base de datos | `php artisan db:backup` · `php artisan db:restore` | Donde corra `artisan` |
+
+</details>
+
+<details>
+<summary><code>👉➕ 🔑 Rotación de claves, paso a paso</code></summary>
+
+Cambiar de clave **sin dejar servidores atrás**: la clave nueva llega avalada por la vieja.
+
+1. **Crea la clave nueva** en tu equipo: `.\scripts\release.ps1 -RotarClaves`. Pide una contraseña (mínimo 12 caracteres), crea el par en `<proyecto>_keys\private` y `\public`, guarda la pública nueva en `config\release-public-keys\<huella>.key` y **deja la clave actual como vigente** para firmar. Anota la huella que muestra.
+2. **Resguarda `<proyecto>_keys`** completa en un USB y en una nube cifrada, y la contraseña en un gestor (nunca por correo). El script ofrece verificar tu copia comparando su SHA-256.
+3. **Haz commit** de `config\release-public-keys\`: la pública nueva viaja en el código.
+4. **Publica una versión normal** con `.\scripts\release.ps1`. Se firma con la clave **actual** y ya lleva la nueva pública.
+5. **Instálala en todos los servidores** (web, git o FTP). Cuando la tengan, confían en las dos claves.
+6. **Cambia a la clave nueva:** `php artisan release:use-key "<ruta de la privada nueva>"` (cambia `RELEASE_SIGNING_KEY_FILE` con copia previa del `.env` y comprobación) y `php artisan release:keycheck --deep`.
+7. **Publica la siguiente versión:** ahora se firma con la nueva; su manifiesto muestra la huella nueva en `signing_key`.
+8. **Retira la vieja (opcional):** cuando ningún servidor vaya a recibir paquetes firmados con ella, en una versión firmada con la nueva pon la pública nueva en `config\release-public.key` y borra la antigua.
+
+> ⚠️ `release:keygen --force` **reemplaza** la clave principal e invalida todo lo ya firmado: úsalo solo si **perdiste** la privada, y reemplaza `config/release-public.key` en cada servidor a mano (FTP).
+
+</details>
+
+<details>
+<summary><code>👉➕ 🛟 Si algo sale mal</code></summary>
+
+| Situación | Qué ocurre o qué hacer |
+|---|---|
+| Falla una instalación web | Se revierte sola: restaura la base de datos, devuelve las carpetas y quita el mantenimiento. También hay un botón **Revertir**. |
+| El sitio no abre tras instalar | `php scripts/revertir-actualizacion.php`. Sin SSH: copia por FTP las carpetas de `storage/app/private/updates/work/rollback/` a su lugar y borra `storage/framework/down`. |
+| Falla la actualización por git | Se revierte sola. Después, para volver atrás: `bash scripts/deploy-servidor.sh --rollback`. |
+| Los datos quedaron mal | `php artisan db:restore`: se guarda un respaldo antes de cada instalación. |
+
+</details>
+
+<details>
+<summary><code>👉➕ 🚫 Reglas que no se rompen</code></summary>
+
+- ⛔ **La clave privada nunca va al hosting.** El servidor solo lleva la pública, que ya viaja en el código; `RELEASE_SIGNING_KEY_FILE` existe solo en tu `.env` de desarrollo.
+- ⛔ **No subas tu `.env` de desarrollo.** Usa `env-produccion.txt`, rellena los «CAMBIAR» y bórralo de tu equipo después de subirlo.
+- ⚠️ **Respalda `<proyecto>_keys`** en un USB y en una nube cifrada, con la contraseña en un gestor. Sin la privada no puedes firmar. Nunca por correo.
+- ⚠️ **Con errores graves, el público ve mantenimiento.** En producción, si `security:check` marca una falla grave, solo entran los administradores; al corregirla, el sitio se abre solo.
+- ⚠️ **El servidor web debe servir `public/`.** Si la raíz del proyecto es la carpeta pública, redirige todo a `public/` para que `storage/`, `VERSION` y los respaldos no se descarguen.
+
+</details>
 
 ---
 
@@ -493,3 +748,16 @@ Notas:
 - El correo se envía dentro de la misma petición, así que no hace falta `php artisan queue:work`.
 - Si falla, el error queda en `storage/logs/laravel.log`.
 - En producción conviene un proveedor de correo transaccional y configurar SPF y DKIM en el dominio para no caer en spam.
+
+---
+
+## 🙌 Créditos
+
+- **Autor, Desarrollo y dirección del proyecto:** Armando Méndez. 😎
+- **Herramientas empleadas:**
+  - [Claude](https://www.anthropic.com/claude) (Anthropic) mediante Claude Code y [Codex](https://openai.com/codex/) (OpenAI) con [Visual Studio Code](https://code.visualstudio.com).
+  - [Git](https://git-scm.com): control de versiones.
+  - [GitHub Desktop](https://desktop.github.com): cliente gráfico para sincronizar con [GitHub](https://github.com).
+  - [Laragon](https://laragon.org): entorno local en Windows (PHP, Apache/Nginx y MySQL para la base de datos).
+- **Software libre y servicios que lo hacen posible:** [Laravel](https://laravel.com), [Bootstrap](https://getbootstrap.com), [jQuery](https://jquery.com), [DataTables](https://datatables.net), [Vite](https://vite.dev), [Laravel Sanctum](https://laravel.com/docs/sanctum), [Spatie Laravel-Permission](https://spatie.be/docs/laravel-permission), [Laravel Excel](https://laravel-excel.com), [Pest](https://pestphp.com), [Laravel Pint](https://laravel.com/docs/pint) y [libsodium](https://libsodium.org) (firma Ed25519 de los paquetes).
+- **Licencias:** cada componente conserva la licencia de su autor; consulta `composer.json` y `package.json` para ver las versiones usadas.
