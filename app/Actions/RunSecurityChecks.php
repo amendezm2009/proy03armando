@@ -80,13 +80,26 @@ class RunSecurityChecks
         return is_file($gitignore) ? array_map('trim', file($gitignore, FILE_IGNORE_NEW_LINES) ?: []) : [];
     }
 
+    /**
+     * En un servidor al que se subió el proyecto sin control de versiones (sin .git ni .gitignore) nada puede
+     * llegar a un repositorio, así que las revisiones del .gitignore no aplican y se dan por buenas.
+     */
+    private function hasNoRepository(): bool
+    {
+        return ! file_exists(base_path('.git')) && ! is_file(base_path('.gitignore'));
+    }
+
     private function envIsIgnored(): bool
     {
-        return in_array('.env', $this->gitignoreLines(), true);
+        return $this->hasNoRepository() || in_array('.env', $this->gitignoreLines(), true);
     }
 
     private function signingKeysAreIgnored(): bool
     {
+        if ($this->hasNoRepository()) {
+            return true;
+        }
+
         $lines = $this->gitignoreLines();
 
         return count(array_intersect($lines, ['*_keys/', '/*_keys/', '*_keys', '/*_keys'])) > 0

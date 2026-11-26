@@ -171,6 +171,27 @@ describe('security:check', function () {
             expect(securityCheckRow('HEALTH_TOKEN')['status'])->toBe('OK');
         });
 
+        it('en un servidor sin control de versiones las revisiones del .gitignore no fallan', function () {
+            secureConfiguration();
+            $original = base_path();
+            $project = sys_get_temp_dir().DIRECTORY_SEPARATOR.'proy03-sin-git-'.bin2hex(random_bytes(4));
+            File::ensureDirectoryExists($project);
+
+            try {
+                $this->app->setBasePath($project);
+
+                expect(securityCheckRow('.env fuera del repositorio', strict: true)['status'])->toBe('OK')
+                    ->and(securityCheckRow('Claves de firma fuera del repositorio', strict: true)['status'])->toBe('OK');
+
+                File::ensureDirectoryExists($project.'/.git');
+                expect(securityCheckRow('.env fuera del repositorio', strict: true)['status'])->toBe('FALLA')
+                    ->and(securityCheckRow('Claves de firma fuera del repositorio', strict: true)['status'])->toBe('FALLA');
+            } finally {
+                $this->app->setBasePath($original);
+                File::deleteDirectory($project);
+            }
+        });
+
         it('falla si el .gitignore no protege las claves de firma', function () {
             secureConfiguration();
             $original = base_path();
