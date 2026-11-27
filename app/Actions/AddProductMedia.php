@@ -144,8 +144,9 @@ class AddProductMedia
         $thumbnailSide = (int) config('catalog.media.thumbnail_side');
 
         try {
+            // Desde la memoria y no desde la ruta: hay hostings con la carpeta temporal sin permiso de lectura.
             $image = ImageManager::usingDriver(Driver::class)
-                ->decodePath($file->getRealPath())
+                ->decodeBinary((string) file_get_contents($file->getRealPath()))
                 ->orient()
                 ->scaleDown($side, $side);
 

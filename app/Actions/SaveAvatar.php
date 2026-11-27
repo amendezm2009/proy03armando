@@ -62,8 +62,10 @@ class SaveAvatar
     private function process(UploadedFile $file): string
     {
         try {
+            // Se decodifica desde la memoria y no desde la ruta: algunos hostings (p. ej. InfinityFree) dejan la
+            // carpeta temporal sin permiso de lectura y decodePath() la rechaza aunque el archivo sí se pueda leer.
             return (string) ImageManager::usingDriver(Driver::class)
-                ->decodePath($file->getRealPath())
+                ->decodeBinary((string) file_get_contents($file->getRealPath()))
                 ->orient()
                 ->cover(self::SIZE, self::SIZE)
                 ->encodeUsingFormat(Format::WEBP, quality: self::QUALITY);
